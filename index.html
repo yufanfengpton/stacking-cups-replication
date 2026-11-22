@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Rebuild of Peiyang Xu's Stacking Cups reasoning graph (ICPC WF 2025 J) compared with the original.">
+<title>Stacking Cups Replication</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column for the story, a full-width scrollable band for the merged graph, then side-by-side path ledger. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --fg: #17202a; --muted: #5b6875; --line: #d5dce3; --edge: #6e7b88;
+  --same: #1f7a4d; --same-bg: #e2f3e9;
+  --close: #a86206; --close-bg: #fbeed6;
+  --his: #b4323a; --his-bg: #fbe3e4;
+  --ours: #2559b5; --ours-bg: #e2ebfb;
+  --focus: #17202a;
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161c; --surface: #19212a; --fg: #e5ebf1; --muted: #98a6b4; --line: #2c3742; --edge: #8c99a6;
+  --same: #5cc994; --same-bg: #173528; --close: #e7a94a; --close-bg: #3a2b12;
+  --his: #f07a80; --his-bg: #3d1d21; --ours: #7ea6f5; --ours-bg: #1b2b48; --focus: #e5ebf1; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19212a; --fg: #e5ebf1; --muted: #98a6b4; --line: #2c3742; --edge: #8c99a6;
+  --same: #5cc994; --same-bg: #173528; --close: #e7a94a; --close-bg: #3a2b12;
+  --his: #f07a80; --his-bg: #3d1d21; --ours: #7ea6f5; --ours-bg: #1b2b48; --focus: #e5ebf1; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 0.86em; }
+header { display: grid; gap: 14px; }
+.lede { color: var(--muted); font-size: 16px; }
+section { display: grid; gap: 16px; min-width: 0; }
+
+/* tallies */
+.tally { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .tally { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tally button { all: unset; cursor: pointer; display: grid; gap: 4px; padding: 14px 16px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--c); }
+.tally button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tally button[aria-pressed="true"] { background: var(--cbg); border-color: var(--c); }
+.tally .num { font-family: var(--display); font-size: 30px; font-weight: 700; color: var(--c); font-variant-numeric: tabular-nums; line-height: 1; }
+.tally .lab { font-weight: 600; font-size: 14px; }
+.tally .sub { color: var(--muted); font-size: 12.5px; }
+.t-same { --c: var(--same); --cbg: var(--same-bg); } .t-close { --c: var(--close); --cbg: var(--close-bg); }
+.t-his { --c: var(--his); --cbg: var(--his-bg); } .t-ours { --c: var(--ours); --cbg: var(--ours-bg); }
+
+/* diagram */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 26px; height: 0; border-top: 2px solid var(--edge); vertical-align: middle; margin-right: 6px; }
+.legend i.dash-his { border-top: 2px dashed var(--his); } .legend i.dash-ours { border-top: 2px dashed var(--ours); }
+.legend b.key { display: inline-block; width: 18px; height: 12px; border: 2.5px solid var(--fg); border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+.figure { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: auto; max-height: 82vh; }
+.figure svg { display: block; width: 2130px; height: auto; max-width: none; }
+.figure.fit svg { width: 100%; }
+.figbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.btn { font: 500 13px var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 13px; }
+
+svg .node text { fill: var(--fg); font-family: var(--body); }
+svg .node path, svg .node polygon { fill: var(--surface); stroke: var(--edge); }
+svg .n-same path { fill: var(--same-bg); stroke: var(--same); }
+svg .n-close path { fill: var(--close-bg); stroke: var(--close); }
+svg .n-his path { fill: var(--his-bg); stroke: var(--his); stroke-dasharray: 5 3; }
+svg .n-ours path { fill: var(--ours-bg); stroke: var(--ours); }
+svg .n-key path { stroke-width: 3; }
+svg .n-end polygon { fill: var(--surface); stroke: var(--fg); stroke-width: 2; }
+svg .edge path { stroke: var(--edge); fill: none; } svg .edge polygon { fill: var(--edge); stroke: var(--edge); }
+svg .e-his path { stroke: var(--his); opacity: .45; } svg .e-his polygon { fill: var(--his); stroke: var(--his); opacity: .45; }
+svg .e-ours path { stroke: var(--ours); opacity: .45; } svg .e-ours polygon { fill: var(--ours); stroke: var(--ours); opacity: .45; }
+svg .e-end path, svg .e-end polygon { opacity: 1; stroke-width: 2.2; }
+svg .edge text { fill: var(--muted); font-family: var(--mono); }
+svg .node { cursor: pointer; transition: opacity .15s; } svg .edge { transition: opacity .15s; }
+svg .node.sel path { stroke: var(--focus); stroke-width: 4; }
+.filtering svg .node:not(.on), .filtering svg .edge:not(.on) { opacity: .12; }
+@media (prefers-reduced-motion: reduce) { svg .node, svg .edge { transition: none; } }
+
+/* detail panel */
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 12px; }
+.detail .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .detail .cols { grid-template-columns: 1fr; } }
+.detail .side { display: grid; gap: 6px; min-width: 0; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); }
+.detail .side.his { border-top: 3px solid var(--his); } .detail .side.ours { border-top: 3px solid var(--ours); }
+.detail .side.none { color: var(--muted); font-style: italic; }
+.detail .who { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chip { display: inline-block; font: 600 12px var(--mono); padding: 2px 8px; border-radius: 99px; background: var(--cbg); color: var(--c); }
+.c-same { --c: var(--same); --cbg: var(--same-bg); } .c-close { --c: var(--close); --cbg: var(--close-bg); }
+.c-his { --c: var(--his); --cbg: var(--his-bg); } .c-ours { --c: var(--ours); --cbg: var(--ours-bg); }
+
+/* path ledger */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td .pid { font: 600 13px var(--mono); }
+td .muted, .muted { color: var(--muted); }
+
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 720px) { .notes { grid-template-columns: 1fr; } }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.note h3 { font-size: 16px; font-weight: 600; }
+.note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: 14px; }
+dl.facts dt { color: var(--muted); } dl.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+</style>
+<style>html{color-scheme:light}body{margin:0;-webkit-text-size-adjust:100%}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">ICPC WF 2025 · Problem J · Reasoning graph replication</div>
+  <h1>Stacking Cups: Peiyang's graph vs. our rebuild</h1>
+  <p class="lede">We reran Peiyang's ReasoningGraph pipeline from scratch on the same problem (gpt-6-astra, high effort, max 12 paths) and merged both graphs into one picture. Every box is a node; its colour says whether it appears in both graphs, in a close form, or in only one.</p>
+</header>
+
+<section aria-labelledby="tally-h">
+  <h2 id="tally-h" class="eyebrow" style="font-family:var(--mono);font-size:12px;font-weight:400">Nodes in the merged graph · click to highlight</h2>
+  <div class="tally" role="group" aria-label="Highlight nodes by match type">
+    <button class="t-same" id="f-same" data-cat="same" aria-pressed="false"><span class="num">17</span><span class="lab">Same claim</span><span class="sub">his node ↔ our node</span></button>
+    <button class="t-close" id="f-close" data-cat="close" aria-pressed="false"><span class="num">7</span><span class="lab">Close</span><span class="sub">split, merged or reworded</span></button>
+    <button class="t-his" id="f-his" data-cat="his" aria-pressed="false"><span class="num">3</span><span class="lab">Only in his</span><span class="sub">all from his path P5</span></button>
+    <button class="t-ours" id="f-ours" data-cat="ours" aria-pressed="false"><span class="num">5</span><span class="lab">Only in ours</span><span class="sub">our new paths P2, P5</span></button>
+  </div>
+</section>
+
+<section aria-labelledby="graph-h">
+  <div class="figbar">
+    <h2 id="graph-h">Merged reasoning graph</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="fitbtn" type="button">Fit to width</button>
+      <button class="btn" id="clearbtn" type="button">Clear highlight</button>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i></i>prerequisite in both graphs</span>
+    <span><i class="dash-his"></i>only in his routes</span>
+    <span><i class="dash-ours"></i>only in our routes</span>
+    <span><b class="key"></b>key node of an approach → END</span>
+  </div>
+  <div class="figure" id="figure"><svg role="img" aria-label="Merged reasoning graph of both builds"
+ viewBox="0.00 0.00 2131.10 928.22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(14.4 913.82)">
+<title>G</title>
+
+<g id="m0" class="node n&#45;same">
+<title>m0</title>
+<g id="a_m0"><a xlink:title="HIS N1: For an ordering a_1,...,a_n of cup indices, let b_t be cup a_t&#39;s bottom elevation. Then b_1=0 and b_t=max_{s&lt;t}(b_s+(a_s&lt;a_t ? 2a_s&#45;1 : 1)). The tower height is max_t(b_t+2a_t&#45;1).&#10;OURS N1: If cup i is placed after cups j with bottom coordinates b_j, its bottom is max_j(b_j+(j&lt;i ? 2j−1 : 1)); the first bottom is zero. The tower height is max_i(b_i+2i−1).">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M176,-538.42C176,-538.42 12,-538.42 12,-538.42 6,-538.42 0,-532.42 0,-526.42 0,-526.42 0,-514.42 0,-514.42 0,-508.42 6,-502.42 12,-502.42 12,-502.42 176,-502.42 176,-502.42 182,-502.42 188,-508.42 188,-514.42 188,-514.42 188,-526.42 188,-526.42 188,-532.42 182,-538.42 176,-538.42"/>
+<text text-anchor="start" x="59.5" y="-524.22" font-family="Helvetica" font-size="9.00">His N1 · Ours N1</text>
+<text text-anchor="start" x="9" y="-513.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Cup placement and tower height</text>
+</a>
+</g>
+</g>
+
+<g id="m1" class="node n&#45;same">
+<title>m1</title>
+<g id="a_m1"><a xlink:title="HIS N2: Every tower using all n cups has height between 2n&#45;1 and n^2, inclusive.&#10;OURS N2: Every tower using all n cups has height between 2n−1 and n².">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M705,-546.42C705,-546.42 550,-546.42 550,-546.42 544,-546.42 538,-540.42 538,-534.42 538,-534.42 538,-522.42 538,-522.42 538,-516.42 544,-510.42 550,-510.42 550,-510.42 705,-510.42 705,-510.42 711,-510.42 717,-516.42 717,-522.42 717,-522.42 717,-534.42 717,-534.42 717,-540.42 711,-546.42 705,-546.42"/>
+<text text-anchor="start" x="593" y="-532.22" font-family="Helvetica" font-size="9.00">His N2 · Ours N2</text>
+<text text-anchor="start" x="547" y="-521.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Universal tower height bounds</text>
+</a>
+</g>
+</g>
+
+<g id="edge1" class="edge e&#45;both">
+<title>m0&#45;&gt;m1</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M188.05,-525.6C204.68,-526.35 221.85,-527.01 238,-527.42 338.21,-530 453.02,-529.92 531.69,-529.4"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="531.78,-531.5 537.76,-529.36 531.75,-527.3 531.78,-531.5"/>
+</g>
+
+<g id="m2" class="node n&#45;same">
+<title>m2</title>
+<g id="a_m2"><a xlink:title="HIS N3: No ordering of all n cups has height n^2&#45;2.&#10;OURS N3: No tower has height n²−2. If cups 2 through n occur in increasing order, the height is n² or n²−1; otherwise some cup of height at least three contributes zero height increase.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1034,-650.42C1034,-650.42 852,-650.42 852,-650.42 846,-650.42 840,-644.42 840,-638.42 840,-638.42 840,-626.42 840,-626.42 840,-620.42 846,-614.42 852,-614.42 852,-614.42 1034,-614.42 1034,-614.42 1040,-614.42 1046,-620.42 1046,-626.42 1046,-626.42 1046,-638.42 1046,-638.42 1046,-644.42 1040,-650.42 1034,-650.42"/>
+<text text-anchor="start" x="908.5" y="-636.22" font-family="Helvetica" font-size="9.00">His N3 · Ours N3</text>
+<text text-anchor="start" x="849" y="-625.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Two&#45;centimeter deficit is impossible</text>
+</a>
+</g>
+</g>
+
+<g id="edge3" class="edge e&#45;both">
+<title>m0&#45;&gt;m2</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M188.07,-532.73C346.01,-553.61 665.68,-595.88 833.51,-618.08"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="833.69,-620.22 839.91,-618.92 834.24,-616.05 833.69,-620.22"/>
+</g>
+
+<g id="m3" class="node n&#45;same">
+<title>m3</title>
+<g id="a_m3"><a xlink:title="HIS N4: Choose any subset S of indices 1,...,n&#45;1. Place S increasingly, then cup n, then all remaining indices decreasingly. This tower has height 2n&#45;1+sum_{i in S}(2i&#45;1).&#10;OURS N11: For any subset S of cups 1 through n−1, placing S increasingly, then cup n, then all other cups decreasingly gives height 2n−1+Σ_{i∈S}(2i−1).">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1045.5,-340.42C1045.5,-340.42 840.5,-340.42 840.5,-340.42 834.5,-340.42 828.5,-334.42 828.5,-328.42 828.5,-328.42 828.5,-316.42 828.5,-316.42 828.5,-310.42 834.5,-304.42 840.5,-304.42 840.5,-304.42 1045.5,-304.42 1045.5,-304.42 1051.5,-304.42 1057.5,-310.42 1057.5,-316.42 1057.5,-316.42 1057.5,-328.42 1057.5,-328.42 1057.5,-334.42 1051.5,-340.42 1045.5,-340.42"/>
+<text text-anchor="start" x="906" y="-326.22" font-family="Helvetica" font-size="9.00">His N4 · Ours N11</text>
+<text text-anchor="start" x="837.5" y="-315.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Increasing then decreasing tower height</text>
+</a>
+</g>
+</g>
+
+<g id="edge6" class="edge e&#45;both">
+<title>m0&#45;&gt;m3</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M108.47,-502.4C131.4,-473.26 181.11,-416.54 238,-391.42 429.09,-307.04 677.05,-304.33 821.94,-312.01"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="822.23,-314.13 828.33,-312.36 822.45,-309.94 822.23,-314.13"/>
+</g>
+
+<g id="m5" class="node n&#45;same">
+<title>m5</title>
+<g id="a_m5"><a xlink:title="HIS N6: For n&gt;=4, the ordering n,2,n&#45;1 followed by all unused cup indices decreasingly has height 2n+1.&#10;OURS N9: For n≥4, the ordering of cup indices n,2,n−1,n−2,…,3,1 has tower height 2n+1.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1029.5,-716.42C1029.5,-716.42 856.5,-716.42 856.5,-716.42 850.5,-716.42 844.5,-710.42 844.5,-704.42 844.5,-704.42 844.5,-692.42 844.5,-692.42 844.5,-686.42 850.5,-680.42 856.5,-680.42 856.5,-680.42 1029.5,-680.42 1029.5,-680.42 1035.5,-680.42 1041.5,-686.42 1041.5,-692.42 1041.5,-692.42 1041.5,-704.42 1041.5,-704.42 1041.5,-710.42 1035.5,-716.42 1029.5,-716.42"/>
+<text text-anchor="start" x="908.5" y="-702.22" font-family="Helvetica" font-size="9.00">His N6 · Ours N9</text>
+<text text-anchor="start" x="853.5" y="-691.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Special tower two above minimum</text>
+</a>
+</g>
+</g>
+
+<g id="edge7" class="edge e&#45;both">
+<title>m0&#45;&gt;m5</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M157.4,-538.48C182.36,-545.43 211.44,-553.19 238,-559.42 449.98,-609.19 700.65,-655.79 838.38,-680.35"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="838.17,-682.45 844.45,-681.43 838.91,-678.31 838.17,-682.45"/>
+</g>
+
+<g id="m7" class="node n&#45;same">
+<title>m7</title>
+<g id="a_m7"><a xlink:title="HIS N8: For m&gt;=2, given an ordering of cups 1,...,m&#45;1 with height H, appending cup m produces height H+2m&#45;1. Prepending cup m produces height max(2m&#45;1,H+1).&#10;OURS N4: For n≥2, an ordering of cups 1 through n−1 with height x becomes a tower of height max(2n−1,x+1) when cup n is prepended, or height x+2n−1 when cup n is appended.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M406,-522.42C406,-522.42 271,-522.42 271,-522.42 265,-522.42 259,-516.42 259,-510.42 259,-510.42 259,-498.42 259,-498.42 259,-492.42 265,-486.42 271,-486.42 271,-486.42 406,-486.42 406,-486.42 412,-486.42 418,-492.42 418,-498.42 418,-498.42 418,-510.42 418,-510.42 418,-516.42 412,-522.42 406,-522.42"/>
+<text text-anchor="start" x="304" y="-508.22" font-family="Helvetica" font-size="9.00">His N8 · Ours N4</text>
+<text text-anchor="start" x="268" y="-497.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Largest cup at an endpoint</text>
+</a>
+</g>
+</g>
+
+<g id="edge8" class="edge e&#45;both">
+<title>m0&#45;&gt;m7</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M188.06,-514.28C209.34,-512.88 231.84,-511.39 252.74,-510.01"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="253.03,-512.1 258.88,-509.61 252.76,-507.91 253.03,-512.1"/>
+</g>
+
+<g id="m19" class="node n&#45;close">
+<title>m19</title>
+<g id="a_m19"><a xlink:title="HIS N15: For every m&gt;=4, all heights in [2m&#45;1,4m&#45;6] are attainable using cups 1,...,m, with at most four initial cups followed by all unused indices decreasingly.&#10;His 4&#45;cup small&#45;core construction; ours builds the small core from at most two cups (N20) instead.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M421.5,-477.42C421.5,-477.42 255.5,-477.42 255.5,-477.42 249.5,-477.42 243.5,-471.42 243.5,-465.42 243.5,-465.42 243.5,-453.42 243.5,-453.42 243.5,-447.42 249.5,-441.42 255.5,-441.42 255.5,-441.42 421.5,-441.42 421.5,-441.42 427.5,-441.42 433.5,-447.42 433.5,-453.42 433.5,-453.42 433.5,-465.42 433.5,-465.42 433.5,-471.42 427.5,-477.42 421.5,-477.42"/>
+<text text-anchor="start" x="321.5" y="-463.22" font-family="Helvetica" font-size="9.00">His N15</text>
+<text text-anchor="start" x="252.5" y="-452.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Low core heights from four cups</text>
+</a>
+</g>
+</g>
+
+<g id="edge2" class="edge e&#45;his">
+<title>m0&#45;&gt;m19</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M161.1,-502.38C185.25,-495.91 212.82,-488.68 238,-482.42 242.66,-481.26 247.44,-480.1 252.28,-478.93"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="253.08,-480.9 258.42,-477.45 252.1,-476.81 253.08,-480.9"/>
+</g>
+
+<g id="m20" class="node n&#45;close">
+<title>m20</title>
+<g id="a_m20"><a xlink:title="HIS N16: For m&gt;=6, ordering m,1,2,m&#45;3,m&#45;1 followed by all unused indices from 1,...,m decreasingly has height 4m&#45;5.&#10;His 5&#45;cup small&#45;core construction; replaced in ours by the two&#45;cup lemma N20.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M427,-432.42C427,-432.42 250,-432.42 250,-432.42 244,-432.42 238,-426.42 238,-420.42 238,-420.42 238,-408.42 238,-408.42 238,-402.42 244,-396.42 250,-396.42 250,-396.42 427,-396.42 427,-396.42 433,-396.42 439,-402.42 439,-408.42 439,-408.42 439,-420.42 439,-420.42 439,-426.42 433,-432.42 427,-432.42"/>
+<text text-anchor="start" x="321.5" y="-418.22" font-family="Helvetica" font-size="9.00">His N16</text>
+<text text-anchor="start" x="247" y="-407.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Top low&#45;core height from five cups</text>
+</a>
+</g>
+</g>
+
+<g id="edge4" class="edge e&#45;his">
+<title>m0&#45;&gt;m20</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M120.68,-502.33C148.41,-483.57 194.49,-454.63 238,-437.42 240.64,-436.38 243.35,-435.37 246.09,-434.41"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="246.76,-436.4 251.77,-432.48 245.42,-432.42 246.76,-436.4"/>
+</g>
+
+<g id="m27" class="node n&#45;ours">
+<title>m27</title>
+<g id="a_m27"><a xlink:title="OURS N7: Partition cup indices 1 through n into consecutive intervals. Output each interval in decreasing order, with intervals ordered from smaller to larger indices. The resulting tower height is the sum of the heights of the largest cups in the intervals.&#10;New in ours: part of our path P2.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M754,-899.42C754,-899.42 501,-899.42 501,-899.42 495,-899.42 489,-893.42 489,-887.42 489,-887.42 489,-875.42 489,-875.42 489,-869.42 495,-863.42 501,-863.42 501,-863.42 754,-863.42 754,-863.42 760,-863.42 766,-869.42 766,-875.42 766,-875.42 766,-887.42 766,-887.42 766,-893.42 760,-899.42 754,-899.42"/>
+<text text-anchor="start" x="610.5" y="-885.22" font-family="Helvetica" font-size="9.00">Ours N7</text>
+<text text-anchor="start" x="498" y="-874.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Descending consecutive blocks add their maxima</text>
+</a>
+</g>
+</g>
+
+<g id="edge5" class="edge e&#45;ours">
+<title>m0&#45;&gt;m27</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M97.96,-538.55C107.53,-590.85 142.71,-742.82 238,-814.42 307.46,-866.62 403.56,-883.52 482.8,-887.3"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="482.87,-889.41 488.96,-887.57 483.06,-885.21 482.87,-889.41"/>
+</g>
+
+<g id="edge14" class="edge e&#45;ours">
+<title>m1&#45;&gt;m2</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M665.03,-546.43C702.23,-564.14 761.96,-590.86 816,-607.42 822.29,-609.35 828.79,-611.16 835.39,-612.86"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="835.14,-614.97 841.47,-614.39 836.16,-610.89 835.14,-614.97"/>
+</g>
+
+<g id="m6" class="node n&#45;same n&#45;key">
+<title>m6</title>
+<g id="a_m6"><a xlink:title="HIS N7: Reject h outside [2n&#45;1,n^2] or equal to n^2&#45;2. Otherwise set x=h&#45;(2n&#45;1). If x=2, use ordering N6; otherwise extract an odd&#45;height subset summing to x and use ordering N4. Output each chosen index i as height 2i&#45;1.&#10;OURS N12: Reject heights outside [2n−1,n²] or equal to n²−2. Use the special ordering when h=2n+1. Otherwise represent h−(2n−1) as a subset of the smaller cup heights, output those cups increasingly, then n and the unselected cups decreasingly.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1309,-688.42C1309,-688.42 1169,-688.42 1169,-688.42 1163,-688.42 1157,-682.42 1157,-676.42 1157,-676.42 1157,-664.42 1157,-664.42 1157,-658.42 1163,-652.42 1169,-652.42 1169,-652.42 1309,-652.42 1309,-652.42 1315,-652.42 1321,-658.42 1321,-664.42 1321,-664.42 1321,-676.42 1321,-676.42 1321,-682.42 1315,-688.42 1309,-688.42"/>
+<text text-anchor="start" x="1202" y="-674.22" font-family="Helvetica" font-size="9.00">His N7 · Ours N12</text>
+<text text-anchor="start" x="1166" y="-663.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Bitonic subset construction</text>
+</a>
+</g>
+</g>
+
+<g id="edge20" class="edge e&#45;both">
+<title>m1&#45;&gt;m6</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M647.3,-546.63C679,-575.97 746.48,-632.73 816,-655.42 875.88,-674.96 1045.49,-675.03 1150.55,-672.96"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1150.8,-675.06 1156.75,-672.83 1150.71,-670.86 1150.8,-675.06"/>
+</g>
+
+<g id="m8" class="node n&#45;same n&#45;key">
+<title>m8</title>
+<g id="a_m8"><a xlink:title="HIS N10: Reject h outside [2n&#45;1,n^2] or equal to n^2&#45;2. Recursively choose an admissible smaller target and a compatible endpoint placement of the largest cup. Solve the bounded exceptional sizes directly, reconstruct the permutation, and output the cup heights.&#10;OURS N6: Reject heights outside the attainable spectrum. Recursively place the largest remaining cup first or last, choosing an attainable residual height that produces the requested height. Stop at a sufficiently large constant&#45;size residual instance and realize its requested height using all its cups.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1623.5,-816.42C1623.5,-816.42 1435.5,-816.42 1435.5,-816.42 1429.5,-816.42 1423.5,-810.42 1423.5,-804.42 1423.5,-804.42 1423.5,-792.42 1423.5,-792.42 1423.5,-786.42 1429.5,-780.42 1435.5,-780.42 1435.5,-780.42 1623.5,-780.42 1623.5,-780.42 1629.5,-780.42 1635.5,-786.42 1635.5,-792.42 1635.5,-792.42 1635.5,-804.42 1635.5,-804.42 1635.5,-810.42 1629.5,-816.42 1623.5,-816.42"/>
+<text text-anchor="start" x="1492.5" y="-802.22" font-family="Helvetica" font-size="9.00">His N10 · Ours N6</text>
+<text text-anchor="start" x="1432.5" y="-791.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Endpoint recursion with a small base</text>
+</a>
+</g>
+</g>
+
+<g id="edge21" class="edge e&#45;his">
+<title>m1&#45;&gt;m8</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M636.5,-546.6C657.98,-593.01 721.71,-716.19 816,-772.42 919.87,-834.36 1237.34,-829.52 1358,-821.42 1377.18,-820.13 1397.48,-818.04 1417.14,-815.63"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1417.53,-817.7 1423.22,-814.87 1417.01,-813.53 1417.53,-817.7"/>
+</g>
+
+<g id="m11" class="node n&#45;same n&#45;key">
+<title>m11</title>
+<g id="a_m11"><a xlink:title="HIS N13: Reject heights excluded by N2 or N3. Set x=h&#45;(2n&#45;1); handle x=2 by N6. Otherwise choose any cardinality k satisfying N11 for m=n&#45;1 and x, construct nondecreasing offsets d_j in [0,m&#45;k] totaling (x&#45;k^2)/2, and use indices j+d_j as N4&#39;s subset.&#10;OURS N15: Reject infeasible heights and use the special ordering for h=2n+1. Otherwise find k with k²≤h−(2n−1)≤k(2n−2−k) and matching parity. Construct that k&#45;cup height sum using bounded nondecreasing index offsets, then output its cups increasingly and all other cups decreasingly.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1337,-394.42C1337,-394.42 1141,-394.42 1141,-394.42 1135,-394.42 1129,-388.42 1129,-382.42 1129,-382.42 1129,-370.42 1129,-370.42 1129,-364.42 1135,-358.42 1141,-358.42 1141,-358.42 1337,-358.42 1337,-358.42 1343,-358.42 1349,-364.42 1349,-370.42 1349,-370.42 1349,-382.42 1349,-382.42 1349,-388.42 1343,-394.42 1337,-394.42"/>
+<text text-anchor="start" x="1199.5" y="-380.22" font-family="Helvetica" font-size="9.00">His N13 · Ours N15</text>
+<text text-anchor="start" x="1138" y="-369.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Cardinality interval tower construction</text>
+</a>
+</g>
+</g>
+
+<g id="edge9" class="edge e&#45;both">
+<title>m1&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M678.61,-510.3C716.13,-497.11 768.89,-479.37 816,-466.42 949.41,-429.77 984.54,-427.55 1120,-399.42 1125.9,-398.2 1131.97,-396.96 1138.1,-395.72"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1138.77,-397.72 1144.24,-394.48 1137.95,-393.61 1138.77,-397.72"/>
+</g>
+
+<g id="m12" class="node n&#45;same">
+<title>m12</title>
+<g id="a_m12"><a xlink:title="HIS N14: Let d=n^2&#45;h satisfy 0&lt;=d&lt;=(n&#45;1)^2 and m=ceil(sqrt(d))+1. A tower of cups 1,...,m with height m^2&#45;d, followed by cups m+1,...,n increasingly, has height h. For m&gt;=2, its required height lies in [2m&#45;1,4m&#45;5].&#10;OURS N19: For 0≤d=n²−h≤(n−1)², let k=⌈√d⌉+1 and s=(k−1)²−d. Then k≤n, and for d&gt;0, 0≤s≤2k−4. A k&#45;cup tower of height 2k−1+s, followed by cups k+1,…,n increasingly, has height h.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1044,-506.42C1044,-506.42 842,-506.42 842,-506.42 836,-506.42 830,-500.42 830,-494.42 830,-494.42 830,-482.42 830,-482.42 830,-476.42 836,-470.42 842,-470.42 842,-470.42 1044,-470.42 1044,-470.42 1050,-470.42 1056,-476.42 1056,-482.42 1056,-482.42 1056,-494.42 1056,-494.42 1056,-500.42 1050,-506.42 1044,-506.42"/>
+<text text-anchor="start" x="903.5" y="-492.22" font-family="Helvetica" font-size="9.00">His N14 · Ours N19</text>
+<text text-anchor="start" x="839" y="-481.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Square deficit localizes the active prefix</text>
+</a>
+</g>
+</g>
+
+<g id="edge10" class="edge e&#45;his">
+<title>m1&#45;&gt;m12</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M717.08,-517.12C750.2,-512.89 788.36,-508.02 823.74,-503.51"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="824.16,-505.57 829.85,-502.73 823.63,-501.41 824.16,-505.57"/>
+</g>
+
+<g id="m13" class="node n&#45;same n&#45;key">
+<title>m13</title>
+<g id="a_m13"><a xlink:title="HIS N17: Reject heights excluded by N2 or N3. Choose the core size and target from N14. Enumerate core permutations if m&lt;=5; otherwise use N15 or N16 according to the target. Append indices m+1,...,n increasingly and output their cup heights.&#10;OURS N21: Reject infeasible heights. Set d=n²−h, k=⌈√d⌉+1, and s=(k−1)²−d. Build a bitonic k&#45;cup tower using at most two contributing smaller cups summing to s, or the special ordering if s=2. Append cups k+1 through n increasingly.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1340,-439.42C1340,-439.42 1138,-439.42 1138,-439.42 1132,-439.42 1126,-433.42 1126,-427.42 1126,-427.42 1126,-415.42 1126,-415.42 1126,-409.42 1132,-403.42 1138,-403.42 1138,-403.42 1340,-403.42 1340,-403.42 1346,-403.42 1352,-409.42 1352,-415.42 1352,-415.42 1352,-427.42 1352,-427.42 1352,-433.42 1346,-439.42 1340,-439.42"/>
+<text text-anchor="start" x="1199.5" y="-425.22" font-family="Helvetica" font-size="9.00">His N17 · Ours N21</text>
+<text text-anchor="start" x="1135" y="-414.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Square deficit direct tower construction</text>
+</a>
+</g>
+</g>
+
+<g id="edge11" class="edge e&#45;both">
+<title>m1&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M717.03,-529.01C836.94,-529.2 1039.59,-527.13 1070,-511.42 1102.38,-494.69 1089.16,-465.84 1120,-446.42 1122.29,-444.98 1124.65,-443.62 1127.07,-442.33"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1128.38,-444.03 1132.82,-439.47 1126.51,-440.27 1128.38,-444.03"/>
+</g>
+
+<g id="m16" class="node n&#45;same n&#45;key">
+<title>m16</title>
+<g id="a_m16"><a xlink:title="HIS N25: Reject heights outside N2&#39;s bounds. Otherwise choose a core b and subset S containing b with odd&#45;height sum h−n+b. Output n,...,b+1, then S increasingly, then unused indices decreasingly, converting indices to heights. If no such pair exists, output impossible.&#10;OURS N26: Reject targets outside the universal bounds. Otherwise find b and a permitting an a&#45;cup height sum h−(n−b) that includes cup b. Construct that subset using bounded offsets; output cups above b decreasingly, the subset increasingly, and remaining cups decreasingly. If no parameters exist, report impossible.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1901,-152.42C1901,-152.42 1713,-152.42 1713,-152.42 1707,-152.42 1701,-146.42 1701,-140.42 1701,-140.42 1701,-128.42 1701,-128.42 1701,-122.42 1707,-116.42 1713,-116.42 1713,-116.42 1901,-116.42 1901,-116.42 1907,-116.42 1913,-122.42 1913,-128.42 1913,-128.42 1913,-140.42 1913,-140.42 1913,-146.42 1907,-152.42 1901,-152.42"/>
+<text text-anchor="start" x="1767.5" y="-138.22" font-family="Helvetica" font-size="9.00">His N25 · Ours N26</text>
+<text text-anchor="start" x="1710" y="-127.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Canonical prefix subset construction</text>
+</a>
+</g>
+</g>
+
+<g id="edge12" class="edge e&#45;his">
+<title>m1&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M636.46,-510.1C657.83,-463.32 721.34,-339.14 816,-282.42 914.09,-223.65 957.28,-260.66 1070,-241.42 1092.26,-237.62 1097.59,-235.17 1120,-232.42 1354.76,-203.65 1420.5,-250.4 1651,-197.42 1691.24,-188.17 1734.59,-169.77 1765.18,-155.23"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1766.24,-157.05 1770.74,-152.56 1764.42,-153.26 1766.24,-157.05"/>
+</g>
+
+<g id="m17" class="node n&#45;close">
+<title>m17</title>
+<g id="a_m17"><a xlink:title="HIS N9: For m&gt;=6, every integer h in [2m&#45;1,m^2] other than m^2&#45;2 admits an integer H in [2m&#45;3,(m&#45;1)^2] other than (m&#45;1)^2&#45;2 such that h=H+2m&#45;1 or h=max(2m&#45;1,H+1).&#10;OURS N5: The attainable heights using n cups are precisely the integers 2n−1≤h≤n² other than n²−2.&#10;His: endpoint moves reach every admissible height. Ours: states the full set of attainable heights instead.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1332.5,-816.42C1332.5,-816.42 1145.5,-816.42 1145.5,-816.42 1139.5,-816.42 1133.5,-810.42 1133.5,-804.42 1133.5,-804.42 1133.5,-792.42 1133.5,-792.42 1133.5,-786.42 1139.5,-780.42 1145.5,-780.42 1145.5,-780.42 1332.5,-780.42 1332.5,-780.42 1338.5,-780.42 1344.5,-786.42 1344.5,-792.42 1344.5,-792.42 1344.5,-804.42 1344.5,-804.42 1344.5,-810.42 1338.5,-816.42 1332.5,-816.42"/>
+<text text-anchor="start" x="1204.5" y="-802.22" font-family="Helvetica" font-size="9.00">His N9 · Ours N5</text>
+<text text-anchor="start" x="1142.5" y="-791.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Complete attainable height spectrum</text>
+</a>
+</g>
+</g>
+
+<g id="edge13" class="edge e&#45;ours">
+<title>m1&#45;&gt;m17</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M637.47,-546.58C660.29,-590.59 725.24,-702.86 816,-751.42 822.86,-755.09 1004.36,-774.38 1127.07,-787.08"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1127.05,-789.19 1133.23,-787.71 1127.48,-785.01 1127.05,-789.19"/>
+</g>
+
+<g id="m23" class="node n&#45;close">
+<title>m23</title>
+<g id="a_m23"><a xlink:title="OURS N25: Every attainable h admits 1≤b≤n and S⊆{1,…,b} containing b with h=n−b+Σ_{i∈S}(2i−1). Conversely, any such representation with h≥2n−1 yields a valid tower in descending&#45;prefix, increasing&#45;subset, descending&#45;tail form.&#10;Split out of his N24: the canonical family covers all heights.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1637.5,-193.42C1637.5,-193.42 1421.5,-193.42 1421.5,-193.42 1415.5,-193.42 1409.5,-187.42 1409.5,-181.42 1409.5,-181.42 1409.5,-169.42 1409.5,-169.42 1409.5,-163.42 1415.5,-157.42 1421.5,-157.42 1421.5,-157.42 1637.5,-157.42 1637.5,-157.42 1643.5,-157.42 1649.5,-163.42 1649.5,-169.42 1649.5,-169.42 1649.5,-181.42 1649.5,-181.42 1649.5,-187.42 1643.5,-193.42 1637.5,-193.42"/>
+<text text-anchor="start" x="1509.5" y="-179.22" font-family="Helvetica" font-size="9.00">Ours N25</text>
+<text text-anchor="start" x="1418.5" y="-168.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Canonical family covers attainable heights</text>
+</a>
+</g>
+</g>
+
+<g id="edge15" class="edge e&#45;ours">
+<title>m1&#45;&gt;m23</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M634.18,-510.42C651.59,-458.57 709.59,-308.63 816,-245.42 864.71,-216.49 1013.7,-229.8 1070,-223.42 1092.3,-220.9 1097.72,-219.1 1120,-216.42 1214.83,-205.03 1322.32,-194.33 1403.23,-186.72"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1403.72,-188.78 1409.5,-186.13 1403.33,-184.6 1403.72,-188.78"/>
+</g>
+
+<g id="m24" class="node n&#45;his">
+<title>m24</title>
+<g id="a_m24"><a xlink:title="HIS N19: For 2n&#45;1&lt;=h&lt;=n^2, choose the least positive m with m(m&#45;1)&gt;=h&#45;n. Then m&lt;=n, and the required inner height is h&#45;n+m=m^2&#45;d, where d=m(m&#45;1)&#45;(h&#45;n). If m&gt;=2, 0&lt;=d&lt;=2m&#45;3; otherwise d=0.&#10;Missing in ours: part of his path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1036.5,-219.42C1036.5,-219.42 849.5,-219.42 849.5,-219.42 843.5,-219.42 837.5,-213.42 837.5,-207.42 837.5,-207.42 837.5,-195.42 837.5,-195.42 837.5,-189.42 843.5,-183.42 849.5,-183.42 849.5,-183.42 1036.5,-183.42 1036.5,-183.42 1042.5,-183.42 1048.5,-189.42 1048.5,-195.42 1048.5,-195.42 1048.5,-207.42 1048.5,-207.42 1048.5,-213.42 1042.5,-219.42 1036.5,-219.42"/>
+<text text-anchor="start" x="926" y="-205.22" font-family="Helvetica" font-size="9.00">His N19</text>
+<text text-anchor="start" x="846.5" y="-194.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Choose a nearly extended inner core</text>
+</a>
+</g>
+</g>
+
+<g id="edge16" class="edge e&#45;his">
+<title>m1&#45;&gt;m24</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M634.04,-510.2C651.26,-456.89 709.19,-300.36 816,-226.42 820.95,-222.99 826.26,-220.01 831.79,-217.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="832.75,-219.29 837.4,-214.95 831.06,-215.45 832.75,-219.29"/>
+</g>
+
+<g id="m26" class="node n&#45;his n&#45;key">
+<title>m26</title>
+<g id="a_m26"><a xlink:title="HIS N22: Reject heights excluded by N2 or N3. Choose m,d by N19 and repair d=2 by N21. Otherwise choose the buried set from N20. Output n,...,m+1, then all unburied core indices increasingly, then buried indices decreasingly, converting indices to cup heights.&#10;Missing in ours: key node of his path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1639,-314.42C1639,-314.42 1420,-314.42 1420,-314.42 1414,-314.42 1408,-308.42 1408,-302.42 1408,-302.42 1408,-290.42 1408,-290.42 1408,-284.42 1414,-278.42 1420,-278.42 1420,-278.42 1639,-278.42 1639,-278.42 1645,-278.42 1651,-284.42 1651,-290.42 1651,-290.42 1651,-302.42 1651,-302.42 1651,-308.42 1645,-314.42 1639,-314.42"/>
+<text text-anchor="start" x="1512.5" y="-300.22" font-family="Helvetica" font-size="9.00">His N22</text>
+<text text-anchor="start" x="1417" y="-289.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Construct padded core with two omissions</text>
+</a>
+</g>
+</g>
+
+<g id="edge17" class="edge e&#45;his">
+<title>m1&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M636.54,-510.17C657.87,-464.31 720.9,-344.71 816,-299.42 867.24,-275.02 1211.13,-284.06 1401.78,-291.14"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1401.86,-293.24 1407.94,-291.37 1402.02,-289.04 1401.86,-293.24"/>
+</g>
+
+<g id="m28" class="node n&#45;ours n&#45;key">
+<title>m28</title>
+<g id="a_m28"><a xlink:title="OURS N10: Reject h outside [2n−1,n²] or equal to n²−2. For h=2n+1 use the special ordering. Otherwise choose a subset of heights 1,3,…,2n−3 summing to h−(2n−1), and use those cup indices together with n as endpoints of descending consecutive blocks.&#10;New in ours: key node of our path P2.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1317,-771.42C1317,-771.42 1161,-771.42 1161,-771.42 1155,-771.42 1149,-765.42 1149,-759.42 1149,-759.42 1149,-747.42 1149,-747.42 1149,-741.42 1155,-735.42 1161,-735.42 1161,-735.42 1317,-735.42 1317,-735.42 1323,-735.42 1329,-741.42 1329,-747.42 1329,-747.42 1329,-759.42 1329,-759.42 1329,-765.42 1323,-771.42 1317,-771.42"/>
+<text text-anchor="start" x="1219" y="-757.22" font-family="Helvetica" font-size="9.00">Ours N10</text>
+<text text-anchor="start" x="1158" y="-746.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Odd subset block construction</text>
+</a>
+</g>
+</g>
+
+<g id="edge18" class="edge e&#45;ours">
+<title>m1&#45;&gt;m28</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M639.53,-546.7C664.87,-586.77 731.59,-681.91 816,-721.42 919.92,-770.06 1054.09,-771.27 1142.93,-764.81"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1143.15,-766.9 1148.98,-764.35 1142.84,-762.71 1143.15,-766.9"/>
+</g>
+
+<g id="m31" class="node n&#45;ours n&#45;key">
+<title>m31</title>
+<g id="a_m31"><a xlink:title="OURS N18: Reject infeasible heights; use the special ordering for h=2n+1. Otherwise greedily select a suffix of smaller cup heights, repair residual 2, and solve the remaining small&#45;prefix subset sum with 0/1 dynamic programming. Output selected cups increasingly and all other cups decreasingly.&#10;New in ours: key node of our path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="2.6" d="M1618.5,-567.42C1618.5,-567.42 1440.5,-567.42 1440.5,-567.42 1434.5,-567.42 1428.5,-561.42 1428.5,-555.42 1428.5,-555.42 1428.5,-543.42 1428.5,-543.42 1428.5,-537.42 1434.5,-531.42 1440.5,-531.42 1440.5,-531.42 1618.5,-531.42 1618.5,-531.42 1624.5,-531.42 1630.5,-537.42 1630.5,-543.42 1630.5,-543.42 1630.5,-555.42 1630.5,-555.42 1630.5,-561.42 1624.5,-567.42 1618.5,-567.42"/>
+<text text-anchor="start" x="1509.5" y="-553.22" font-family="Helvetica" font-size="9.00">Ours N18</text>
+<text text-anchor="start" x="1437.5" y="-542.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Greedy suffix and dense subset DP</text>
+</a>
+</g>
+</g>
+
+<g id="edge19" class="edge e&#45;ours">
+<title>m1&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M685.25,-546.52C722.09,-557.29 771.37,-569.91 816,-575.42 1055.08,-604.93 1117.74,-589.81 1358,-572.42 1378.83,-570.91 1401,-568.51 1422.23,-565.82"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1422.51,-567.9 1428.19,-565.05 1421.97,-563.74 1422.51,-567.9"/>
+</g>
+
+<g id="edge42" class="edge e&#45;both">
+<title>m2&#45;&gt;m6</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1046,-645.61C1080.04,-650 1117.64,-654.86 1150.47,-659.11"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1150.33,-661.21 1156.55,-659.89 1150.87,-657.04 1150.33,-661.21"/>
+</g>
+
+<g id="edge43" class="edge e&#45;his">
+<title>m2&#45;&gt;m8</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M996.01,-650.57C1046.76,-668.26 1116.81,-692.62 1120,-693.42 1223.89,-719.51 1254.66,-703.22 1358,-731.42 1401.94,-743.41 1450.08,-762.96 1483.97,-777.85"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1483.36,-779.88 1489.7,-780.38 1485.06,-776.04 1483.36,-779.88"/>
+</g>
+
+<g id="edge34" class="edge e&#45;both">
+<title>m2&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1011.52,-614.32C1032.8,-605.65 1054.72,-593.15 1070,-575.42 1123.09,-513.83 1060.13,-454.45 1120,-399.42 1121.21,-398.31 1122.46,-397.24 1123.74,-396.22"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1125.23,-397.74 1128.84,-392.5 1122.75,-394.34 1125.23,-397.74"/>
+</g>
+
+<g id="edge35" class="edge e&#45;both">
+<title>m2&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1006.85,-614.33C1028.98,-605.48 1052.64,-592.87 1070,-575.42 1108.45,-536.78 1079.98,-500.44 1120,-463.42 1129.62,-454.52 1141.25,-447.49 1153.41,-441.93"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1154.37,-443.8 1159.03,-439.48 1152.69,-439.95 1154.37,-443.8"/>
+</g>
+
+<g id="edge36" class="edge e&#45;his">
+<title>m2&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1046,-637.69C1219.55,-644.45 1562.14,-647.5 1651,-572.42 1781.69,-462.01 1802.22,-233.9 1805.42,-158.91"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1807.53,-158.62 1805.66,-152.54 1803.33,-158.46 1807.53,-158.62"/>
+</g>
+
+<g id="edge37" class="edge e&#45;ours">
+<title>m2&#45;&gt;m17</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1025.31,-650.47C1041.38,-656.76 1057.21,-665.17 1070,-676.42 1107.31,-709.24 1080.31,-746.52 1120,-776.42 1122.47,-778.28 1125.05,-780 1127.72,-781.59"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1127.05,-783.62 1133.32,-784.67 1129.07,-779.94 1127.05,-783.62"/>
+</g>
+
+<g id="edge38" class="edge e&#45;ours">
+<title>m2&#45;&gt;m23</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M994.22,-614.31C1018.18,-604.54 1046.64,-591.23 1070,-575.42 1095.51,-558.16 1091.9,-540.05 1120,-527.42 1168.4,-505.67 1318.13,-543.42 1358,-508.42 1438.25,-437.98 1352.29,-364.52 1408,-273.42 1428.05,-240.64 1463.11,-213.99 1490.27,-196.8"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1491.6,-198.44 1495.58,-193.49 1489.38,-194.88 1491.6,-198.44"/>
+</g>
+
+<g id="edge39" class="edge e&#45;his">
+<title>m2&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1046.34,-616.47C1070.48,-612.77 1096.14,-608.91 1120,-605.42 1225.67,-589.99 1268.53,-630.73 1358,-572.42 1406.57,-540.77 1487.28,-381.55 1517.03,-320.39"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1519.02,-321.11 1519.75,-314.79 1515.24,-319.27 1519.02,-321.11"/>
+</g>
+
+<g id="edge40" class="edge e&#45;ours">
+<title>m2&#45;&gt;m28</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1014.38,-650.51C1033.28,-657.07 1053.13,-665.6 1070,-676.42 1096.98,-693.74 1091.97,-712.86 1120,-728.42 1127.15,-732.39 1134.86,-735.73 1142.8,-738.54"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1142.55,-740.67 1148.91,-740.59 1143.89,-736.69 1142.55,-740.67"/>
+</g>
+
+<g id="edge41" class="edge e&#45;ours">
+<title>m2&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1046.36,-629.37C1149.25,-625.74 1300.59,-618.71 1358,-607.42 1400.34,-599.1 1446.59,-582.89 1480.22,-569.72"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1481.11,-571.62 1485.92,-567.47 1479.57,-567.72 1481.11,-571.62"/>
+</g>
+
+<g id="edge63" class="edge e&#45;both">
+<title>m3&#45;&gt;m6</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1037.29,-340.47C1049.53,-346.15 1060.95,-353.62 1070,-363.42 1134.79,-433.6 1069.57,-491.31 1120,-572.42 1140.17,-604.86 1174.78,-631.71 1201.32,-649.06"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1200.33,-650.92 1206.51,-652.4 1202.6,-647.39 1200.33,-650.92"/>
+</g>
+
+<g id="edge57" class="edge e&#45;both">
+<title>m3&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1042.31,-340.48C1071.73,-345.88 1104.08,-351.82 1133.87,-357.29"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1133.51,-359.36 1139.79,-358.38 1134.26,-355.23 1133.51,-359.36"/>
+</g>
+
+<g id="edge58" class="edge e&#45;ours">
+<title>m3&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1012.57,-340.49C1031.65,-346.65 1052.05,-354.32 1070,-363.42 1094.42,-375.81 1094.82,-388.65 1120,-399.42 1121.43,-400.03 1122.87,-400.62 1124.32,-401.2"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1123.65,-403.19 1130.01,-403.34 1125.13,-399.26 1123.65,-403.19"/>
+</g>
+
+<g id="m15" class="node n&#45;same">
+<title>m15</title>
+<g id="a_m15"><a xlink:title="HIS N23: For 1&lt;=b&lt;=n and a subset S of {1,...,b} containing b, place n,...,b+1, then S increasingly, then unused core indices decreasingly. The resulting height is max(2n−1,n−b+sum_{i in S}(2i−1)).&#10;OURS N22: For 1≤b≤n and S⊆{1,…,b} containing b, placing cups above b decreasingly, then S increasingly, then unused cups decreasingly gives height max(2n−1,n−b+Σ_{i∈S}(2i−1)).">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1346,-152.42C1346,-152.42 1132,-152.42 1132,-152.42 1126,-152.42 1120,-146.42 1120,-140.42 1120,-140.42 1120,-128.42 1120,-128.42 1120,-122.42 1126,-116.42 1132,-116.42 1132,-116.42 1346,-116.42 1346,-116.42 1352,-116.42 1358,-122.42 1358,-128.42 1358,-128.42 1358,-140.42 1358,-140.42 1358,-146.42 1352,-152.42 1346,-152.42"/>
+<text text-anchor="start" x="1199.5" y="-138.22" font-family="Helvetica" font-size="9.00">His N23 · Ours N22</text>
+<text text-anchor="start" x="1129" y="-127.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Descending prefix and bitonic core height</text>
+</a>
+</g>
+</g>
+
+<g id="edge59" class="edge e&#45;both">
+<title>m3&#45;&gt;m15</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M972.19,-304.4C1026.6,-269.6 1145.87,-193.33 1204.34,-155.95"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1205.54,-157.67 1209.46,-152.67 1203.28,-154.13 1205.54,-157.67"/>
+</g>
+
+<g id="m25" class="node n&#45;his">
+<title>m25</title>
+<g id="a_m25"><a xlink:title="HIS N21: If N19 gives d=2 and h!=n^2&#45;2, then m&lt;n and m&gt;=3. Enlarge the core to M=m+1. Its new deficit is 2M, realized by placing all other core cups increasingly, then cups M&#45;1 and 2.&#10;Missing in ours: part of his path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1329.5,-273.42C1329.5,-273.42 1148.5,-273.42 1148.5,-273.42 1142.5,-273.42 1136.5,-267.42 1136.5,-261.42 1136.5,-261.42 1136.5,-249.42 1136.5,-249.42 1136.5,-243.42 1142.5,-237.42 1148.5,-237.42 1148.5,-237.42 1329.5,-237.42 1329.5,-237.42 1335.5,-237.42 1341.5,-243.42 1341.5,-249.42 1341.5,-249.42 1341.5,-261.42 1341.5,-261.42 1341.5,-267.42 1335.5,-273.42 1329.5,-273.42"/>
+<text text-anchor="start" x="1222" y="-259.22" font-family="Helvetica" font-size="9.00">His N21</text>
+<text text-anchor="start" x="1145.5" y="-248.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Repair deficit two by enlarging core</text>
+</a>
+</g>
+</g>
+
+<g id="edge60" class="edge e&#45;his">
+<title>m3&#45;&gt;m25</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1023.17,-304.38C1063.29,-295.24 1112.05,-284.13 1152.96,-274.8"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1153.56,-276.82 1158.94,-273.44 1152.62,-272.72 1153.56,-276.82"/>
+</g>
+
+<g id="edge61" class="edge e&#45;his">
+<title>m3&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1057.74,-317.36C1156.48,-312.97 1299.3,-306.62 1401.7,-302.06"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1401.87,-304.16 1407.77,-301.79 1401.68,-299.96 1401.87,-304.16"/>
+</g>
+
+<g id="edge62" class="edge e&#45;ours">
+<title>m3&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1057.68,-321.35C1161.79,-322.09 1307.18,-327.94 1358,-353.42 1435.17,-392.12 1492.26,-482.52 1516.15,-525.67"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1514.45,-526.94 1519.17,-531.19 1518.13,-524.92 1514.45,-526.94"/>
+</g>
+
+<g id="m4" class="node n&#45;same">
+<title>m4</title>
+<g id="a_m4"><a xlink:title="HIS N5: For m&gt;=0, the subset sums of {1,3,...,2m&#45;1} are exactly the integers in [0,m^2] other than 2 and m^2&#45;2, ignoring excluded values outside that interval.&#10;OURS N8: For every k≥0, the subset sums of the first k cup heights are exactly the integers 0≤s≤k² except 2 and k²−2.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1047,-570.42C1047,-570.42 839,-570.42 839,-570.42 833,-570.42 827,-564.42 827,-558.42 827,-558.42 827,-546.42 827,-546.42 827,-540.42 833,-534.42 839,-534.42 839,-534.42 1047,-534.42 1047,-534.42 1053,-534.42 1059,-540.42 1059,-546.42 1059,-546.42 1059,-558.42 1059,-558.42 1059,-564.42 1053,-570.42 1047,-570.42"/>
+<text text-anchor="start" x="908.5" y="-556.22" font-family="Helvetica" font-size="9.00">His N5 · Ours N8</text>
+<text text-anchor="start" x="836" y="-545.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Subset sums of consecutive odd heights</text>
+</a>
+</g>
+</g>
+
+<g id="edge71" class="edge e&#45;both">
+<title>m4&#45;&gt;m6</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M988.97,-570.47C1042.47,-591.94 1131.54,-627.69 1187.4,-650.11"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1186.68,-652.09 1193.03,-652.37 1188.25,-648.19 1186.68,-652.09"/>
+</g>
+
+<g id="edge65" class="edge e&#45;both">
+<title>m4&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1032.17,-534.31C1045.92,-528.64 1059.14,-521.19 1070,-511.42 1110.52,-474.96 1077.33,-433.35 1120,-399.42 1121.13,-398.52 1122.28,-397.66 1123.46,-396.82"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1124.88,-398.4 1128.75,-393.36 1122.58,-394.89 1124.88,-398.4"/>
+</g>
+
+<g id="m18" class="node n&#45;close">
+<title>m18</title>
+<g id="a_m18"><a xlink:title="HIS N24: For heights within the universal bounds, the least b in [1,n] admitting a subset sum t=h−n+b of {1,3,...,2b−1} exists exactly when h≠n²−2. At that size, the largest feasible cardinality admits a subset containing cup b.&#10;OURS N24: For h≥2n−1 and 1≤b≤n, put t=h−(n−b). If an a&#45;cup subset of 1,…,b has height sum t but no such subset contains b, then t−1 is a subset sum among cups 1,…,b−1.&#10;His single lemma is split across our N24 and N25.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1342,-107.42C1342,-107.42 1136,-107.42 1136,-107.42 1130,-107.42 1124,-101.42 1124,-95.42 1124,-95.42 1124,-83.42 1124,-83.42 1124,-77.42 1130,-71.42 1136,-71.42 1136,-71.42 1342,-71.42 1342,-71.42 1348,-71.42 1354,-77.42 1354,-83.42 1354,-83.42 1354,-95.42 1354,-95.42 1354,-101.42 1348,-107.42 1342,-107.42"/>
+<text text-anchor="start" x="1199.5" y="-93.22" font-family="Helvetica" font-size="9.00">His N24 · Ours N24</text>
+<text text-anchor="start" x="1133" y="-82.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Missing core peak permits smaller prefix</text>
+</a>
+</g>
+</g>
+
+<g id="edge66" class="edge e&#45;his">
+<title>m4&#45;&gt;m18</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1040.15,-534.33C1051.53,-528.63 1061.94,-521.18 1070,-511.42 1182.74,-374.9 1001.51,-244.93 1119.69,-112.25"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1121.51,-113.37 1124.02,-107.53 1118.41,-110.53 1121.51,-113.37"/>
+</g>
+
+<g id="edge67" class="edge e&#45;ours">
+<title>m4&#45;&gt;m23</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1054.7,-534.4C1060.02,-532.06 1065.15,-529.41 1070,-526.42 1100.44,-507.69 1088.46,-480.24 1120,-463.42 1166.82,-438.46 1316.84,-477.91 1358,-444.42 1419.42,-394.45 1364.19,-339.38 1408,-273.42 1429.4,-241.2 1464.65,-214.32 1491.51,-196.91"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1492.83,-198.56 1496.76,-193.56 1490.57,-195.02 1492.83,-198.56"/>
+</g>
+
+<g id="edge68" class="edge e&#45;ours">
+<title>m4&#45;&gt;m28</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1001.58,-570.52C1024.69,-579.8 1050.44,-592.92 1070,-610.42 1102.09,-639.14 1088.48,-664.08 1120,-693.42 1137.84,-710.02 1161.14,-723.16 1182.32,-732.86"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1181.61,-734.85 1187.94,-735.38 1183.33,-731.01 1181.61,-734.85"/>
+</g>
+
+<g id="m29" class="node n&#45;ours">
+<title>m29</title>
+<g id="a_m29"><a xlink:title="OURS N16: For any feasible subset sum s of heights 1,3,…,2n−3, a consecutive suffix of these heights can be selected so that the remaining target is feasible in the unselected prefix and lies in [0,2n−1].&#10;New in ours: part of our path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1334,-503.42C1334,-503.42 1144,-503.42 1144,-503.42 1138,-503.42 1132,-497.42 1132,-491.42 1132,-491.42 1132,-479.42 1132,-479.42 1132,-473.42 1138,-467.42 1144,-467.42 1144,-467.42 1334,-467.42 1334,-467.42 1340,-467.42 1346,-473.42 1346,-479.42 1346,-479.42 1346,-491.42 1346,-491.42 1346,-497.42 1340,-503.42 1334,-503.42"/>
+<text text-anchor="start" x="1219" y="-489.22" font-family="Helvetica" font-size="9.00">Ours N16</text>
+<text text-anchor="start" x="1141" y="-478.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Suffix leaves a feasible small residual</text>
+</a>
+</g>
+</g>
+
+<g id="edge69" class="edge e&#45;ours">
+<title>m4&#45;&gt;m29</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1041.63,-534.38C1051.26,-532.2 1060.84,-529.87 1070,-527.42 1092.67,-521.35 1097.37,-516.64 1120,-510.42 1126.94,-508.51 1134.15,-506.67 1141.42,-504.9"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1142.19,-506.87 1147.54,-503.44 1141.21,-502.79 1142.19,-506.87"/>
+</g>
+
+<g id="m30" class="node n&#45;ours">
+<title>m30</title>
+<g id="a_m30"><a xlink:title="OURS N17: If r is a feasible subset sum of the first m cup heights, it is also a subset sum of the first min(m,⌈√r⌉+1) cup heights.&#10;New in ours: part of our path P5.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1321,-567.42C1321,-567.42 1157,-567.42 1157,-567.42 1151,-567.42 1145,-561.42 1145,-555.42 1145,-555.42 1145,-543.42 1145,-543.42 1145,-537.42 1151,-531.42 1157,-531.42 1157,-531.42 1321,-531.42 1321,-531.42 1327,-531.42 1333,-537.42 1333,-543.42 1333,-543.42 1333,-555.42 1333,-555.42 1333,-561.42 1327,-567.42 1321,-567.42"/>
+<text text-anchor="start" x="1219" y="-553.22" font-family="Helvetica" font-size="9.00">Ours N17</text>
+<text text-anchor="start" x="1154" y="-542.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Small prefix suffices for residual</text>
+</a>
+</g>
+</g>
+
+<g id="edge70" class="edge e&#45;ours">
+<title>m4&#45;&gt;m30</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1059.35,-551.24C1085.56,-550.98 1113.19,-550.7 1138.66,-550.44"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1138.77,-552.53 1144.75,-550.37 1138.73,-548.33 1138.77,-552.53"/>
+</g>
+
+<g id="edge76" class="edge e&#45;both">
+<title>m5&#45;&gt;m6</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1041.9,-689.1C1076.97,-685.76 1116.24,-682.02 1150.39,-678.77"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1150.93,-680.82 1156.7,-678.16 1150.53,-676.64 1150.93,-680.82"/>
+</g>
+
+<g id="edge72" class="edge e&#45;both">
+<title>m5&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1035.18,-680.37C1048.33,-674.31 1060.58,-666.22 1070,-655.42 1146.21,-568.07 1038.01,-481.38 1120,-399.42 1121.28,-398.14 1122.61,-396.92 1123.98,-395.76"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1125.35,-397.36 1128.81,-392.03 1122.78,-394.04 1125.35,-397.36"/>
+</g>
+
+<g id="edge73" class="edge e&#45;ours">
+<title>m5&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1033.65,-680.29C1047.23,-674.24 1060.01,-666.18 1070,-655.42 1130,-590.8 1060.42,-528.43 1120,-463.42 1128.01,-454.68 1137.95,-447.76 1148.65,-442.28"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1149.82,-444.05 1154.3,-439.54 1147.99,-440.27 1149.82,-444.05"/>
+</g>
+
+<g id="edge74" class="edge e&#45;ours">
+<title>m5&#45;&gt;m28</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1040.27,-716.43C1073.22,-722.59 1110.04,-729.48 1142.9,-735.63"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1142.7,-737.73 1148.99,-736.77 1143.47,-733.6 1142.7,-737.73"/>
+</g>
+
+<g id="edge75" class="edge e&#45;ours">
+<title>m5&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1041.5,-715.35C1127.61,-726.13 1255.11,-731.76 1358,-693.42 1424.09,-668.79 1482.41,-606.37 1510.58,-572.36"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1512.34,-573.53 1514.52,-567.56 1509.09,-570.87 1512.34,-573.53"/>
+</g>
+
+<g id="END" class="node n&#45;end">
+<title>END</title>
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M2102.45,-500.47C2102.45,-500.47 2102.45,-506.37 2102.45,-506.37 2102.45,-509.32 2099.63,-513.13 2096.81,-514 2096.81,-514 2067.2,-523.06 2067.2,-523.06 2064.38,-523.92 2058.61,-524.78 2055.66,-524.78 2055.66,-524.78 2009.64,-524.78 2009.64,-524.78 2006.69,-524.78 2000.92,-523.92 1998.1,-523.06 1998.1,-523.06 1968.49,-514 1968.49,-514 1965.67,-513.13 1962.85,-509.32 1962.85,-506.37 1962.85,-506.37 1962.85,-500.47 1962.85,-500.47 1962.85,-497.52 1965.67,-493.71 1968.49,-492.85 1968.49,-492.85 1998.1,-483.79 1998.1,-483.79 2000.92,-482.92 2006.69,-482.06 2009.64,-482.06 2009.64,-482.06 2055.66,-482.06 2055.66,-482.06 2058.61,-482.06 2064.38,-482.92 2067.2,-483.79 2067.2,-483.79 2096.81,-492.85 2096.81,-492.85 2099.63,-493.71 2102.45,-497.52 2102.45,-500.47"/>
+<text text-anchor="start" x="2020.15" y="-505.62" font-family="Helvetica" font-weight="bold" font-size="11.00">END</text>
+<text text-anchor="start" x="1996.15" y="-496.22" font-family="Helvetica" font-size="9.00">complete solution</text>
+</g>
+
+<g id="edge87" class="edge e&#45;both e&#45;end">
+<title>m6&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" d="M1321.28,-672.51C1404.88,-673.02 1538.41,-669.29 1651,-645.42 1777.84,-618.53 1918.8,-557.04 1988.19,-524.5"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="1989.34,-526.28 1993.87,-521.83 1987.55,-522.48 1989.34,-526.28"/>
+<text text-anchor="middle" x="1636.17" y="-634.39" font-family="Helvetica" font-size="9.00">his P1 / ours P3</text>
+</g>
+
+<g id="edge81" class="edge e&#45;both">
+<title>m7&#45;&gt;m8</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M349.34,-522.58C370.24,-559.49 422.59,-643.69 489,-690.42 614.75,-778.92 665.63,-771.27 816,-803.42 1051.86,-853.85 1117.85,-852.76 1358,-830.42 1385.88,-827.83 1416,-822.9 1443.05,-817.67"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1443.65,-819.69 1449.13,-816.48 1442.84,-815.57 1443.65,-819.69"/>
+</g>
+
+<g id="edge77" class="edge e&#45;both">
+<title>m7&#45;&gt;m12</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M418.27,-502.33C521.62,-499.59 703.93,-494.74 823.85,-491.56"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="823.93,-493.66 829.87,-491.4 823.82,-489.46 823.93,-493.66"/>
+</g>
+
+<g id="edge78" class="edge e&#45;ours">
+<title>m7&#45;&gt;m15</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M418.3,-496.71C426.05,-493.25 433.19,-488.61 439,-482.42 537.55,-377.5 382.55,-259.32 489,-162.42 533.97,-121.49 912.66,-125.4 1113.7,-130.5"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1113.84,-132.6 1119.89,-130.66 1113.95,-128.4 1113.84,-132.6"/>
+</g>
+
+<g id="edge79" class="edge e&#45;both">
+<title>m7&#45;&gt;m17</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M362.55,-522.53C428.54,-573.18 625.74,-716.28 816,-772.42 918.44,-802.65 1040.76,-806.91 1127.27,-804.97"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1127.49,-807.06 1133.44,-804.81 1127.39,-802.86 1127.49,-807.06"/>
+</g>
+
+<g id="m21" class="node n&#45;close">
+<title>m21</title>
+<g id="a_m21"><a xlink:title="HIS N18: For 1&lt;=m&lt;=n, given a tower of cups 1,...,m with height H, prefixing the indices n,n&#45;1,...,m+1 yields total height max(2n&#45;1,n&#45;m+H).&#10;His padding lemma is folded into our N22.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M726.5,-203.42C726.5,-203.42 528.5,-203.42 528.5,-203.42 522.5,-203.42 516.5,-197.42 516.5,-191.42 516.5,-191.42 516.5,-179.42 516.5,-179.42 516.5,-173.42 522.5,-167.42 528.5,-167.42 528.5,-167.42 726.5,-167.42 726.5,-167.42 732.5,-167.42 738.5,-173.42 738.5,-179.42 738.5,-179.42 738.5,-191.42 738.5,-191.42 738.5,-197.42 732.5,-203.42 726.5,-203.42"/>
+<text text-anchor="start" x="610.5" y="-189.22" font-family="Helvetica" font-size="9.00">His N18</text>
+<text text-anchor="start" x="525.5" y="-178.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Decreasing outer cups pad inner tower</text>
+</a>
+</g>
+</g>
+
+<g id="edge80" class="edge e&#45;his">
+<title>m7&#45;&gt;m21</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M418.09,-493.36C425.51,-490.49 432.63,-486.9 439,-482.42 540.08,-411.38 598.61,-266.74 618.63,-209.51"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="620.69,-209.97 620.66,-203.61 616.72,-208.6 620.69,-209.97"/>
+</g>
+
+<g id="edge88" class="edge e&#45;both e&#45;end">
+<title>m8&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" d="M1635.52,-802.03C1718.32,-799.69 1832.81,-784.41 1913,-725.42 1979.67,-676.37 2012.63,-578.39 2025.27,-530.72"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="2027.31,-531.22 2026.78,-524.89 2023.25,-530.17 2027.31,-531.22"/>
+<text text-anchor="middle" x="1881.01" y="-718.22" font-family="Helvetica" font-size="9.00">his P2 / ours P1</text>
+</g>
+
+<g id="m9" class="node n&#45;same">
+<title>m9</title>
+<g id="a_m9"><a xlink:title="HIS N11: For 0&lt;=k&lt;=m, sums of exactly k distinct members of {1,3,...,2m&#45;1} are precisely the integers x satisfying k^2&lt;=x&lt;=k(2m&#45;k) and x congruent to k modulo 2.&#10;OURS N13: Among the first m cup heights, the sums of exactly k distinct heights are precisely the integers s satisfying k²≤s≤k(2m−k) and s≡k modulo 2, for 0≤k≤m.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M713.5,-85.42C713.5,-85.42 541.5,-85.42 541.5,-85.42 535.5,-85.42 529.5,-79.42 529.5,-73.42 529.5,-73.42 529.5,-61.42 529.5,-61.42 529.5,-55.42 535.5,-49.42 541.5,-49.42 541.5,-49.42 713.5,-49.42 713.5,-49.42 719.5,-49.42 725.5,-55.42 725.5,-61.42 725.5,-61.42 725.5,-73.42 725.5,-73.42 725.5,-79.42 719.5,-85.42 713.5,-85.42"/>
+<text text-anchor="start" x="588" y="-71.22" font-family="Helvetica" font-size="9.00">His N11 · Ours N13</text>
+<text text-anchor="start" x="538.5" y="-60.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Fixed&#45;cardinality odd height sums</text>
+</a>
+</g>
+</g>
+
+<g id="m10" class="node n&#45;same">
+<title>m10</title>
+<g id="a_m10"><a xlink:title="HIS N12: For x&gt;=0, let k be the largest integer with 0&lt;=k&lt;=m, k^2&lt;=x, and k congruent to x modulo 2. An odd&#45;height subset totaling x exists exactly when such k exists and x&lt;=k(2m&#45;k).&#10;OURS N23: For b≥1 and t≥0, subset feasibility among the first b cup heights is decided by the largest cardinality allowed by availability, the square minimum&#45;sum bound, and parity. Smaller cardinalities cannot rescue a candidate that fails its maximum&#45;sum bound.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1058,-53.42C1058,-53.42 828,-53.42 828,-53.42 822,-53.42 816,-47.42 816,-41.42 816,-41.42 816,-29.42 816,-29.42 816,-23.42 822,-17.42 828,-17.42 828,-17.42 1058,-17.42 1058,-17.42 1064,-17.42 1070,-23.42 1070,-29.42 1070,-29.42 1070,-41.42 1070,-41.42 1070,-47.42 1064,-53.42 1058,-53.42"/>
+<text text-anchor="start" x="903.5" y="-39.22" font-family="Helvetica" font-size="9.00">His N12 · Ours N23</text>
+<text text-anchor="start" x="825" y="-28.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Maximal cardinality decides subset feasibility</text>
+</a>
+</g>
+</g>
+
+<g id="edge82" class="edge e&#45;both">
+<title>m9&#45;&gt;m10</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M725.55,-57.52C752.24,-54.79 781.65,-51.79 809.96,-48.9"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="810.22,-50.98 815.98,-48.28 809.8,-46.81 810.22,-50.98"/>
+</g>
+
+<g id="edge83" class="edge e&#45;his">
+<title>m9&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M668.63,-85.51C699.64,-101.48 741.32,-127.64 766,-162.42 814.55,-230.83 751.23,-291.11 816,-344.42 837.85,-362.41 1041.78,-361.27 1070,-363.42 1086.89,-364.71 1104.73,-366.08 1122.23,-367.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1122.51,-369.55 1128.66,-367.92 1122.83,-365.36 1122.51,-369.55"/>
+</g>
+
+<g id="edge84" class="edge e&#45;his">
+<title>m9&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M676.22,-49.31C713.62,-36.13 767.31,-19.42 816,-12.42 989.11,12.44 1568.2,-6.06 1651,-32.42 1702.36,-48.77 1752.8,-87.32 1781.58,-112.07"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1780.44,-113.87 1786.35,-116.22 1783.2,-110.7 1780.44,-113.87"/>
+</g>
+
+<g id="edge85" class="edge e&#45;both">
+<title>m9&#45;&gt;m18</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M725.88,-67.82C815.38,-68.56 951.69,-70.64 1070,-76.42 1085.35,-77.17 1101.47,-78.16 1117.4,-79.26"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1117.6,-81.38 1123.74,-79.7 1117.9,-77.19 1117.6,-81.38"/>
+</g>
+
+<g id="m22" class="node n&#45;close">
+<title>m22</title>
+<g id="a_m22"><a xlink:title="OURS N14: A feasible k&#45;cup sum s among the first m cups can be constructed with indices a_i=i+x_i, using integer offsets satisfying 0≤x_1≤⋯≤x_k≤m−k and Σx_i=(s−k²)/2. These conditions ensure distinct available indices and total height s.&#10;Split out of his N13: the index&#45;offset construction as its own node.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1048.5,-117.42C1048.5,-117.42 837.5,-117.42 837.5,-117.42 831.5,-117.42 825.5,-111.42 825.5,-105.42 825.5,-105.42 825.5,-93.42 825.5,-93.42 825.5,-87.42 831.5,-81.42 837.5,-81.42 837.5,-81.42 1048.5,-81.42 1048.5,-81.42 1054.5,-81.42 1060.5,-87.42 1060.5,-93.42 1060.5,-93.42 1060.5,-105.42 1060.5,-105.42 1060.5,-111.42 1054.5,-117.42 1048.5,-117.42"/>
+<text text-anchor="start" x="923" y="-103.22" font-family="Helvetica" font-size="9.00">Ours N14</text>
+<text text-anchor="start" x="834.5" y="-92.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Construct a prescribed cardinality subset</text>
+</a>
+</g>
+</g>
+
+<g id="edge86" class="edge e&#45;ours">
+<title>m9&#45;&gt;m22</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M725.55,-77.33C755.13,-80.35 788.06,-83.71 819.12,-86.88"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="819.12,-88.99 825.3,-87.51 819.55,-84.81 819.12,-88.99"/>
+</g>
+
+<g id="edge22" class="edge e&#45;his">
+<title>m10&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1037.21,-53.54C1049.46,-59.22 1060.91,-66.66 1070,-76.42 1132.75,-143.78 1071.24,-199.34 1120,-277.42 1140.38,-310.06 1175.14,-337.29 1201.67,-354.87"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1200.68,-356.74 1206.86,-358.26 1202.98,-353.22 1200.68,-356.74"/>
+</g>
+
+<g id="edge23" class="edge e&#45;both">
+<title>m10&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1070.01,-27.98C1212.83,-22.6 1451.7,-22.89 1651,-68.42 1692.47,-77.9 1736.85,-97.91 1767.45,-113.43"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1766.7,-115.4 1773,-116.27 1768.62,-111.67 1766.7,-115.4"/>
+</g>
+
+<g id="edge24" class="edge e&#45;his">
+<title>m10&#45;&gt;m18</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1042.31,-53.48C1071.73,-58.88 1104.08,-64.82 1133.87,-70.29"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1133.51,-72.36 1139.79,-71.38 1134.26,-68.23 1133.51,-72.36"/>
+</g>
+
+<g id="edge89" class="edge e&#45;both e&#45;end">
+<title>m11&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" d="M1349.29,-388.61C1482.93,-404.34 1715.7,-434.37 1913,-473.42 1933.12,-477.4 1954.93,-482.65 1974.3,-487.63"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="1973.89,-489.7 1980.23,-489.17 1974.95,-485.63 1973.89,-489.7"/>
+<text text-anchor="middle" x="1633.8" y="-423.72" font-family="Helvetica" font-size="9.00">his P3 / ours P4</text>
+</g>
+
+<g id="edge25" class="edge e&#45;both">
+<title>m12&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1041.63,-470.38C1051.26,-468.2 1060.84,-465.87 1070,-463.42 1092.67,-457.35 1097.37,-452.64 1120,-446.42 1126.94,-444.51 1134.15,-442.67 1141.42,-440.9"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1142.19,-442.87 1147.54,-439.44 1141.21,-438.79 1142.19,-442.87"/>
+</g>
+
+<g id="edge90" class="edge e&#45;both e&#45;end">
+<title>m13&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" d="M1352.43,-437.47C1370.98,-439.93 1390.02,-442.34 1408,-444.42 1605.68,-467.29 1839.38,-487.61 1956.62,-497.34"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="1956.65,-499.45 1962.8,-497.85 1956.99,-495.27 1956.65,-499.45"/>
+<text text-anchor="middle" x="1625.12" y="-463.35" font-family="Helvetica" font-size="9.00">his P4 / ours P6</text>
+</g>
+
+<g id="m14" class="node n&#45;same">
+<title>m14</title>
+<g id="a_m14"><a xlink:title="HIS N20: For m&gt;=1, zero and every integer d in [1,2m&#45;3] other than 2 are sums of at most two distinct heights among cups 1,...,m&#45;1.&#10;OURS N20: For k≥2, every integer s satisfying 0≤s≤2k−4 and s≠2 can be represented by at most two distinct cup heights from 1,3,…,2k−3.">
+<path fill="lightgrey" stroke="black" stroke-width="1.4" d="M1034.5,-404.42C1034.5,-404.42 851.5,-404.42 851.5,-404.42 845.5,-404.42 839.5,-398.42 839.5,-392.42 839.5,-392.42 839.5,-380.42 839.5,-380.42 839.5,-374.42 845.5,-368.42 851.5,-368.42 851.5,-368.42 1034.5,-368.42 1034.5,-368.42 1040.5,-368.42 1046.5,-374.42 1046.5,-380.42 1046.5,-380.42 1046.5,-392.42 1046.5,-392.42 1046.5,-398.42 1040.5,-404.42 1034.5,-404.42"/>
+<text text-anchor="start" x="903.5" y="-390.22" font-family="Helvetica" font-size="9.00">His N20 · Ours N20</text>
+<text text-anchor="start" x="848.5" y="-379.62" font-family="Helvetica" font-weight="bold" font-size="11.00">Small excess uses at most two cups</text>
+</a>
+</g>
+</g>
+
+<g id="edge26" class="edge e&#45;ours">
+<title>m14&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1046.83,-398.66C1070.41,-401.47 1095.67,-404.48 1119.84,-407.36"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1119.76,-409.46 1125.96,-408.08 1120.25,-405.29 1119.76,-409.46"/>
+</g>
+
+<g id="edge27" class="edge e&#45;his">
+<title>m14&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1035.66,-368.4C1062.77,-363.29 1092.54,-357.91 1120,-353.42 1214.01,-338.06 1320.63,-323.27 1401.37,-312.61"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1401.95,-314.65 1407.62,-311.78 1401.4,-310.48 1401.95,-314.65"/>
+</g>
+
+<g id="edge28" class="edge e&#45;his">
+<title>m15&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1358.31,-134.42C1457.34,-134.42 1597.65,-134.42 1694.68,-134.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1694.72,-136.52 1700.72,-134.42 1694.72,-132.32 1694.72,-136.52"/>
+</g>
+
+<g id="edge29" class="edge e&#45;ours">
+<title>m15&#45;&gt;m23</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1358.18,-151.22C1372.88,-153.31 1387.96,-155.45 1402.78,-157.55"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1402.87,-159.69 1409.11,-158.45 1403.46,-155.53 1402.87,-159.69"/>
+</g>
+
+<g id="edge91" class="edge e&#45;both e&#45;end">
+<title>m16&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" d="M1818.94,-152.47C1855.26,-212.4 1972.03,-405.06 2015.31,-476.46"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="2013.63,-477.75 2018.54,-481.79 2017.23,-475.57 2013.63,-477.75"/>
+<text text-anchor="middle" x="1886.65" y="-309.78" font-family="Helvetica" font-size="9.00">his P6 / ours P7</text>
+</g>
+
+<g id="edge30" class="edge e&#45;both">
+<title>m17&#45;&gt;m8</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1344.56,-798.42C1368.2,-798.42 1393.38,-798.42 1417.28,-798.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1417.33,-800.52 1423.33,-798.42 1417.33,-796.32 1417.33,-800.52"/>
+</g>
+
+<g id="edge31" class="edge e&#45;both">
+<title>m18&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" d="M1354.2,-98.5C1453.36,-106.38 1596.09,-117.73 1694.46,-125.55"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1694.43,-127.66 1700.58,-126.04 1694.76,-123.47 1694.43,-127.66"/>
+</g>
+
+<g id="edge32" class="edge e&#45;ours">
+<title>m18&#45;&gt;m23</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1342.9,-107.49C1348.02,-108.74 1353.08,-110.05 1358,-111.42 1400.32,-123.21 1446.94,-141.06 1480.71,-154.92"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1480.09,-156.93 1486.44,-157.28 1481.7,-153.05 1480.09,-156.93"/>
+</g>
+
+<g id="edge33" class="edge e&#45;his">
+<title>m19&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M433.53,-455.44C598.39,-448.47 939.18,-434.06 1119.74,-426.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1119.93,-428.52 1125.83,-426.17 1119.75,-424.32 1119.93,-428.52"/>
+</g>
+
+<g id="edge44" class="edge e&#45;his">
+<title>m20&#45;&gt;m13</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M439.09,-415.2C605.91,-416.5 941.06,-419.11 1119.64,-420.5"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1119.65,-422.6 1125.67,-420.55 1119.68,-418.4 1119.65,-422.6"/>
+</g>
+
+<g id="edge45" class="edge e&#45;his">
+<title>m21&#45;&gt;m15</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M738.94,-170.83C764.23,-167.78 791.02,-164.78 816,-162.42 915.94,-152.98 1029.5,-145.64 1113.62,-140.85"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1113.75,-142.94 1119.62,-140.51 1113.51,-138.75 1113.75,-142.94"/>
+</g>
+
+<g id="edge46" class="edge e&#45;his">
+<title>m21&#45;&gt;m24</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M738.59,-191.04C768.57,-192.57 801.05,-194.23 831.07,-195.76"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="831.34,-197.88 837.44,-196.09 831.56,-193.68 831.34,-197.88"/>
+</g>
+
+<g id="edge47" class="edge e&#45;his">
+<title>m21&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M738.53,-180.63C763.97,-179.71 790.92,-178.89 816,-178.42 1057.08,-173.92 1127.19,-132.66 1358,-202.42 1410.98,-218.43 1465.94,-252.42 1498.67,-274.83"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1497.6,-276.65 1503.73,-278.33 1499.99,-273.19 1497.6,-276.65"/>
+</g>
+
+<g id="edge48" class="edge e&#45;ours">
+<title>m22&#45;&gt;m11</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M984.33,-117.52C1011.26,-131.19 1046,-152.09 1070,-178.42 1103.21,-214.85 1089.38,-238.79 1120,-277.42 1144.45,-308.27 1179.79,-336.37 1205.42,-354.69"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1204.3,-356.47 1210.41,-358.22 1206.72,-353.04 1204.3,-356.47"/>
+</g>
+
+<g id="edge49" class="edge e&#45;ours">
+<title>m22&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1022.85,-81.41C1053.06,-75.36 1087.96,-69.4 1120,-66.42 1335.7,-46.37 1589.31,-88.67 1719.4,-115.17"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1719.21,-117.27 1725.5,-116.42 1720.05,-113.16 1719.21,-117.27"/>
+</g>
+
+<g id="edge50" class="edge e&#45;ours">
+<title>m23&#45;&gt;m16</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1649.74,-157.68C1664.62,-155.46 1679.81,-153.2 1694.57,-151"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1695.24,-153.03 1700.87,-150.07 1694.62,-148.87 1695.24,-153.03"/>
+</g>
+
+<g id="edge51" class="edge e&#45;his">
+<title>m24&#45;&gt;m18</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M973.05,-183.24C1007.03,-162.77 1065.59,-129.97 1120,-111.42 1122.2,-110.67 1124.43,-109.95 1126.69,-109.24"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1127.58,-111.17 1132.72,-107.43 1126.37,-107.14 1127.58,-111.17"/>
+</g>
+
+<g id="edge52" class="edge e&#45;his">
+<title>m24&#45;&gt;m25</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1042.31,-219.48C1071.73,-224.88 1104.08,-230.82 1133.87,-236.29"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1133.51,-238.36 1139.79,-237.38 1134.26,-234.23 1133.51,-238.36"/>
+</g>
+
+<g id="edge53" class="edge e&#45;his">
+<title>m24&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1048.54,-201.09C1132.97,-202.76 1254.35,-209.58 1358,-232.42 1402.22,-242.17 1450.32,-261.04 1484.13,-275.77"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1483.51,-277.8 1489.85,-278.29 1485.2,-273.95 1483.51,-277.8"/>
+</g>
+
+<g id="edge54" class="edge e&#45;his">
+<title>m25&#45;&gt;m26</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1341.71,-269.88C1361.2,-272.65 1381.83,-275.58 1401.99,-278.44"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1401.71,-280.52 1407.95,-279.29 1402.3,-276.37 1401.71,-280.52"/>
+</g>
+
+<g id="edge92" class="edge e&#45;his e&#45;end">
+<title>m26&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" stroke-dasharray="5,2" d="M1595.11,-314.42C1672.54,-337.04 1805.31,-379.16 1913,-430.42 1942.23,-444.34 1973.34,-463.66 1996.37,-478.93"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="1995.29,-480.74 2001.45,-482.32 1997.62,-477.25 1995.29,-480.74"/>
+<text text-anchor="middle" x="1790.76" y="-376.86" font-family="Helvetica" font-size="9.00">his P5</text>
+</g>
+
+<g id="edge55" class="edge e&#45;ours">
+<title>m27&#45;&gt;m28</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M710.59,-863.41C808.1,-842.13 975.74,-805.89 1120,-776.42 1127.41,-774.91 1135.1,-773.36 1142.82,-771.82"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1143.26,-773.88 1148.73,-770.65 1142.44,-769.76 1143.26,-773.88"/>
+</g>
+
+<g id="edge93" class="edge e&#45;ours e&#45;end">
+<title>m28&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" stroke-dasharray="5,2" d="M1329.26,-747.13C1462.64,-734.77 1719.03,-699.46 1913,-602.42 1949.89,-583.97 1985.26,-551.97 2007.64,-529.35"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="2009.24,-530.72 2011.94,-524.96 2006.24,-527.78 2009.24,-530.72"/>
+<text text-anchor="middle" x="1667.89" y="-678.9" font-family="Helvetica" font-size="9.00">ours P2</text>
+</g>
+
+<g id="edge56" class="edge e&#45;ours">
+<title>m29&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1321.52,-503.5C1358.84,-511.79 1403.13,-521.61 1441.14,-530.04"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1440.87,-532.13 1447.19,-531.38 1441.78,-528.03 1440.87,-532.13"/>
+</g>
+
+<g id="edge64" class="edge e&#45;ours">
+<title>m30&#45;&gt;m31</title>
+<path fill="none" stroke="black" stroke-width="1.1" stroke-dasharray="5,2" d="M1333.27,-549.42C1361.63,-549.42 1393,-549.42 1422.15,-549.42"/>
+<polygon fill="black" stroke="black" stroke-width="1.1" points="1422.33,-551.52 1428.33,-549.42 1422.33,-547.32 1422.33,-551.52"/>
+</g>
+
+<g id="edge94" class="edge e&#45;ours e&#45;end">
+<title>m31&#45;&gt;END</title>
+<path fill="none" stroke="black" stroke-width="1.8" stroke-dasharray="5,2" d="M1630.71,-540.22C1726.95,-531.39 1870.14,-518.25 1956.82,-510.29"/>
+<polygon fill="black" stroke="black" stroke-width="1.8" points="1957.18,-512.37 1962.96,-509.73 1956.79,-508.18 1957.18,-512.37"/>
+<text text-anchor="middle" x="1781.52" y="-517.71" font-family="Helvetica" font-size="9.00">ours P5</text>
+</g>
+</g>
+</svg>
+</div>
+  <p class="hint">Read left to right: the statement-level foundations on the left, the full approaches (key nodes) on the right, feeding END. Click any node to compare the two statements. Edge labels on the right name the approach in each graph.</p>
+  <div class="detail" id="detail" aria-live="polite">
+    <div class="who">Selected node</div>
+    <div id="detail-body"></div>
+  </div>
+</section>
+
+<section aria-labelledby="paths-h">
+  <h2 id="paths-h">Approaches the judge accepted</h2>
+  <p class="muted">Each path is one complete solution whose C++ program passed all 136 tests. Paths are matched by their key idea, not by number.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>His path</th><th>Our path</th><th>Key idea</th><th>Match</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pid">P1</span></td><td><span class="pid">P3</span></td><td>Pick a subset of the smaller cups, stack it increasing, then the largest cup, then the rest decreasing; the height is 2n−1 plus an odd-number subset sum.</td><td><span class="chip c-same">same</span></td></tr>
+      <tr><td><span class="pid">P2</span></td><td><span class="pid">P1</span></td><td>Place the largest cup at one end and recurse on a smaller target; solve small sizes directly.</td><td><span class="chip c-same">same</span></td></tr>
+      <tr><td><span class="pid">P3</span></td><td><span class="pid">P4</span></td><td>Choose how many cups contribute first; sums of k odd heights form a parity interval, built with bounded index offsets.</td><td><span class="chip c-same">same</span> <span class="muted">we split the offset step into its own node</span></td></tr>
+      <tr><td><span class="pid">P4</span></td><td><span class="pid">P6</span></td><td>Push the whole shortfall d = n² − h into a core of ⌈√d⌉+1 cups and append the rest increasing.</td><td><span class="chip c-same">same</span> <span class="muted">our small core uses ≤ 2 cups, his 4–5</span></td></tr>
+      <tr><td><span class="pid">P5</span></td><td class="muted">none</td><td>Larger cups decreasing around a nearly extended inner core with at most two cups buried inside.</td><td><span class="chip c-his">only his</span></td></tr>
+      <tr><td><span class="pid">P6</span> <span class="muted">editorial</span></td><td><span class="pid">P7</span> <span class="muted">editorial</span></td><td>Search over the core size; the largest feasible number of cups decides; the first feasible core contains its largest cup.</td><td><span class="chip c-same">same</span></td></tr>
+      <tr><td class="muted">none</td><td><span class="pid">P2</span></td><td>Descending consecutive blocks: the height is the sum of each block's largest cup.</td><td><span class="chip c-ours">only ours</span></td></tr>
+      <tr><td class="muted">none</td><td><span class="pid">P5</span></td><td>Greedy suffix of large cups, then a small 0/1 subset-sum DP on the remaining prefix.</td><td><span class="chip c-ours">only ours</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="read-h">
+  <h2 id="read-h">How to read the result</h2>
+  <div class="notes">
+    <div class="note">
+      <h3>What reproduced</h3>
+      <ul>
+        <li>The same four foundations derived straight from the statement: the height model, odd subset sums, fixed-count sums, and the two-cup lemma.</li>
+        <li>5 of his 6 approaches, including the editorial one, with matching key nodes.</li>
+        <li>The same implementation hazards: 64-bit heights up to 4·10¹⁰, exact square roots, printing heights rather than indices.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>What differed</h3>
+      <ul>
+        <li>His P5 did not come up in our run; two approaches of ours (P2, P5) did not come up in his.</li>
+        <li>We split some steps into two nodes (offsets, the canonical-family lemma) and built small cases from two cups instead of four or five.</li>
+        <li>Many prerequisite edges differ between matched nodes: the explorer wires routes slightly differently each run.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Run facts</h3>
+      <dl class="facts">
+        <dt>His build</dt><dd>2026-11-02 · 25 nodes · 6 paths · 4 reviews</dd>
+        <dt>Our build</dt><dd>2026-11-20 · 26 nodes · 7 paths · 7 reviews</dd>
+        <dt>Submissions</dt><dd>his 5 · ours 6 (all accepted first try)</dd>
+        <dt>Our tokens</dt><dd>369k in (182k cached) · 155k out</dd>
+        <dt>Our cost</dt><dd>≈ $9.80 at list prices</dd>
+        <dt>Identical text</dt><dd>0 of 26 node statements</dd>
+      </dl>
+    </div>
+    <div class="note">
+      <h3>Inputs and caveats</h3>
+      <ul>
+        <li>Editorial and reference solution match his fingerprints exactly; the statement text differs slightly from the one his graph recorded (open question for Peiyang).</li>
+        <li>One run each, so we cannot yet separate real differences from run-to-run variation.</li>
+        <li>Node matching was done by reading the statements, not automatically.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+</div>
+
+<script id="nodes" type="application/json">{"nodes": [{"m": "m0", "his": "N1", "ours": "N1", "cat": "same", "name": "Cup placement and tower height", "note": "", "key": [], "his_statement": "For an ordering a_1,...,a_n of cup indices, let b_t be cup a_t's bottom elevation. Then b_1=0 and b_t=max_{s<t}(b_s+(a_s<a_t ? 2a_s-1 : 1)). The tower height is max_t(b_t+2a_t-1).", "ours_statement": "If cup i is placed after cups j with bottom coordinates b_j, its bottom is max_j(b_j+(j<i ? 2j\u22121 : 1)); the first bottom is zero. The tower height is max_i(b_i+2i\u22121)."}, {"m": "m1", "his": "N2", "ours": "N2", "cat": "same", "name": "Universal tower height bounds", "note": "", "key": [], "his_statement": "Every tower using all n cups has height between 2n-1 and n^2, inclusive.", "ours_statement": "Every tower using all n cups has height between 2n\u22121 and n\u00b2."}, {"m": "m2", "his": "N3", "ours": "N3", "cat": "same", "name": "Two-centimeter deficit is impossible", "note": "", "key": [], "his_statement": "No ordering of all n cups has height n^2-2.", "ours_statement": "No tower has height n\u00b2\u22122. If cups 2 through n occur in increasing order, the height is n\u00b2 or n\u00b2\u22121; otherwise some cup of height at least three contributes zero height increase."}, {"m": "m3", "his": "N4", "ours": "N11", "cat": "same", "name": "Increasing then decreasing tower height", "note": "", "key": [], "his_statement": "Choose any subset S of indices 1,...,n-1. Place S increasingly, then cup n, then all remaining indices decreasingly. This tower has height 2n-1+sum_{i in S}(2i-1).", "ours_statement": "For any subset S of cups 1 through n\u22121, placing S increasingly, then cup n, then all other cups decreasingly gives height 2n\u22121+\u03a3_{i\u2208S}(2i\u22121)."}, {"m": "m4", "his": "N5", "ours": "N8", "cat": "same", "name": "Subset sums of consecutive odd heights", "note": "", "key": [], "his_statement": "For m>=0, the subset sums of {1,3,...,2m-1} are exactly the integers in [0,m^2] other than 2 and m^2-2, ignoring excluded values outside that interval.", "ours_statement": "For every k\u22650, the subset sums of the first k cup heights are exactly the integers 0\u2264s\u2264k\u00b2 except 2 and k\u00b2\u22122."}, {"m": "m5", "his": "N6", "ours": "N9", "cat": "same", "name": "Special tower two above minimum", "note": "", "key": [], "his_statement": "For n>=4, the ordering n,2,n-1 followed by all unused cup indices decreasingly has height 2n+1.", "ours_statement": "For n\u22654, the ordering of cup indices n,2,n\u22121,n\u22122,\u2026,3,1 has tower height 2n+1."}, {"m": "m6", "his": "N7", "ours": "N12", "cat": "same", "name": "Bitonic subset construction", "note": "", "key": ["his P1", "ours P3"], "his_statement": "Reject h outside [2n-1,n^2] or equal to n^2-2. Otherwise set x=h-(2n-1). If x=2, use ordering N6; otherwise extract an odd-height subset summing to x and use ordering N4. Output each chosen index i as height 2i-1.", "ours_statement": "Reject heights outside [2n\u22121,n\u00b2] or equal to n\u00b2\u22122. Use the special ordering when h=2n+1. Otherwise represent h\u2212(2n\u22121) as a subset of the smaller cup heights, output those cups increasingly, then n and the unselected cups decreasingly."}, {"m": "m7", "his": "N8", "ours": "N4", "cat": "same", "name": "Largest cup at an endpoint", "note": "", "key": [], "his_statement": "For m>=2, given an ordering of cups 1,...,m-1 with height H, appending cup m produces height H+2m-1. Prepending cup m produces height max(2m-1,H+1).", "ours_statement": "For n\u22652, an ordering of cups 1 through n\u22121 with height x becomes a tower of height max(2n\u22121,x+1) when cup n is prepended, or height x+2n\u22121 when cup n is appended."}, {"m": "m8", "his": "N10", "ours": "N6", "cat": "same", "name": "Endpoint recursion with a small base", "note": "", "key": ["his P2", "ours P1"], "his_statement": "Reject h outside [2n-1,n^2] or equal to n^2-2. Recursively choose an admissible smaller target and a compatible endpoint placement of the largest cup. Solve the bounded exceptional sizes directly, reconstruct the permutation, and output the cup heights.", "ours_statement": "Reject heights outside the attainable spectrum. Recursively place the largest remaining cup first or last, choosing an attainable residual height that produces the requested height. Stop at a sufficiently large constant-size residual instance and realize its requested height using all its cups."}, {"m": "m9", "his": "N11", "ours": "N13", "cat": "same", "name": "Fixed-cardinality odd height sums", "note": "", "key": [], "his_statement": "For 0<=k<=m, sums of exactly k distinct members of {1,3,...,2m-1} are precisely the integers x satisfying k^2<=x<=k(2m-k) and x congruent to k modulo 2.", "ours_statement": "Among the first m cup heights, the sums of exactly k distinct heights are precisely the integers s satisfying k\u00b2\u2264s\u2264k(2m\u2212k) and s\u2261k modulo 2, for 0\u2264k\u2264m."}, {"m": "m10", "his": "N12", "ours": "N23", "cat": "same", "name": "Maximal cardinality decides subset feasibility", "note": "", "key": [], "his_statement": "For x>=0, let k be the largest integer with 0<=k<=m, k^2<=x, and k congruent to x modulo 2. An odd-height subset totaling x exists exactly when such k exists and x<=k(2m-k).", "ours_statement": "For b\u22651 and t\u22650, subset feasibility among the first b cup heights is decided by the largest cardinality allowed by availability, the square minimum-sum bound, and parity. Smaller cardinalities cannot rescue a candidate that fails its maximum-sum bound."}, {"m": "m11", "his": "N13", "ours": "N15", "cat": "same", "name": "Cardinality interval tower construction", "note": "", "key": ["his P3", "ours P4"], "his_statement": "Reject heights excluded by N2 or N3. Set x=h-(2n-1); handle x=2 by N6. Otherwise choose any cardinality k satisfying N11 for m=n-1 and x, construct nondecreasing offsets d_j in [0,m-k] totaling (x-k^2)/2, and use indices j+d_j as N4's subset.", "ours_statement": "Reject infeasible heights and use the special ordering for h=2n+1. Otherwise find k with k\u00b2\u2264h\u2212(2n\u22121)\u2264k(2n\u22122\u2212k) and matching parity. Construct that k-cup height sum using bounded nondecreasing index offsets, then output its cups increasingly and all other cups decreasingly."}, {"m": "m12", "his": "N14", "ours": "N19", "cat": "same", "name": "Square deficit localizes the active prefix", "note": "", "key": [], "his_statement": "Let d=n^2-h satisfy 0<=d<=(n-1)^2 and m=ceil(sqrt(d))+1. A tower of cups 1,...,m with height m^2-d, followed by cups m+1,...,n increasingly, has height h. For m>=2, its required height lies in [2m-1,4m-5].", "ours_statement": "For 0\u2264d=n\u00b2\u2212h\u2264(n\u22121)\u00b2, let k=\u2308\u221ad\u2309+1 and s=(k\u22121)\u00b2\u2212d. Then k\u2264n, and for d>0, 0\u2264s\u22642k\u22124. A k-cup tower of height 2k\u22121+s, followed by cups k+1,\u2026,n increasingly, has height h."}, {"m": "m13", "his": "N17", "ours": "N21", "cat": "same", "name": "Square deficit direct tower construction", "note": "", "key": ["his P4", "ours P6"], "his_statement": "Reject heights excluded by N2 or N3. Choose the core size and target from N14. Enumerate core permutations if m<=5; otherwise use N15 or N16 according to the target. Append indices m+1,...,n increasingly and output their cup heights.", "ours_statement": "Reject infeasible heights. Set d=n\u00b2\u2212h, k=\u2308\u221ad\u2309+1, and s=(k\u22121)\u00b2\u2212d. Build a bitonic k-cup tower using at most two contributing smaller cups summing to s, or the special ordering if s=2. Append cups k+1 through n increasingly."}, {"m": "m14", "his": "N20", "ours": "N20", "cat": "same", "name": "Small excess uses at most two cups", "note": "", "key": [], "his_statement": "For m>=1, zero and every integer d in [1,2m-3] other than 2 are sums of at most two distinct heights among cups 1,...,m-1.", "ours_statement": "For k\u22652, every integer s satisfying 0\u2264s\u22642k\u22124 and s\u22602 can be represented by at most two distinct cup heights from 1,3,\u2026,2k\u22123."}, {"m": "m15", "his": "N23", "ours": "N22", "cat": "same", "name": "Descending prefix and bitonic core height", "note": "", "key": [], "his_statement": "For 1<=b<=n and a subset S of {1,...,b} containing b, place n,...,b+1, then S increasingly, then unused core indices decreasingly. The resulting height is max(2n\u22121,n\u2212b+sum_{i in S}(2i\u22121)).", "ours_statement": "For 1\u2264b\u2264n and S\u2286{1,\u2026,b} containing b, placing cups above b decreasingly, then S increasingly, then unused cups decreasingly gives height max(2n\u22121,n\u2212b+\u03a3_{i\u2208S}(2i\u22121))."}, {"m": "m16", "his": "N25", "ours": "N26", "cat": "same", "name": "Canonical prefix subset construction", "note": "", "key": ["his P6", "ours P7"], "his_statement": "Reject heights outside N2's bounds. Otherwise choose a core b and subset S containing b with odd-height sum h\u2212n+b. Output n,...,b+1, then S increasingly, then unused indices decreasingly, converting indices to heights. If no such pair exists, output impossible.", "ours_statement": "Reject targets outside the universal bounds. Otherwise find b and a permitting an a-cup height sum h\u2212(n\u2212b) that includes cup b. Construct that subset using bounded offsets; output cups above b decreasingly, the subset increasingly, and remaining cups decreasingly. If no parameters exist, report impossible."}, {"m": "m17", "his": "N9", "ours": "N5", "cat": "close", "name": "Complete attainable height spectrum", "note": "His: endpoint moves reach every admissible height. Ours: states the full set of attainable heights instead.", "key": [], "his_statement": "For m>=6, every integer h in [2m-1,m^2] other than m^2-2 admits an integer H in [2m-3,(m-1)^2] other than (m-1)^2-2 such that h=H+2m-1 or h=max(2m-1,H+1).", "ours_statement": "The attainable heights using n cups are precisely the integers 2n\u22121\u2264h\u2264n\u00b2 other than n\u00b2\u22122."}, {"m": "m18", "his": "N24", "ours": "N24", "cat": "close", "name": "Missing core peak permits smaller prefix", "note": "His single lemma is split across our N24 and N25.", "key": [], "his_statement": "For heights within the universal bounds, the least b in [1,n] admitting a subset sum t=h\u2212n+b of {1,3,...,2b\u22121} exists exactly when h\u2260n\u00b2\u22122. At that size, the largest feasible cardinality admits a subset containing cup b.", "ours_statement": "For h\u22652n\u22121 and 1\u2264b\u2264n, put t=h\u2212(n\u2212b). If an a-cup subset of 1,\u2026,b has height sum t but no such subset contains b, then t\u22121 is a subset sum among cups 1,\u2026,b\u22121."}, {"m": "m19", "his": "N15", "ours": null, "cat": "close", "name": "Low core heights from four cups", "note": "His 4-cup small-core construction; ours builds the small core from at most two cups (N20) instead.", "key": [], "his_statement": "For every m>=4, all heights in [2m-1,4m-6] are attainable using cups 1,...,m, with at most four initial cups followed by all unused indices decreasingly.", "ours_statement": null}, {"m": "m20", "his": "N16", "ours": null, "cat": "close", "name": "Top low-core height from five cups", "note": "His 5-cup small-core construction; replaced in ours by the two-cup lemma N20.", "key": [], "his_statement": "For m>=6, ordering m,1,2,m-3,m-1 followed by all unused indices from 1,...,m decreasingly has height 4m-5.", "ours_statement": null}, {"m": "m21", "his": "N18", "ours": null, "cat": "close", "name": "Decreasing outer cups pad inner tower", "note": "His padding lemma is folded into our N22.", "key": [], "his_statement": "For 1<=m<=n, given a tower of cups 1,...,m with height H, prefixing the indices n,n-1,...,m+1 yields total height max(2n-1,n-m+H).", "ours_statement": null}, {"m": "m22", "his": null, "ours": "N14", "cat": "close", "name": "Construct a prescribed cardinality subset", "note": "Split out of his N13: the index-offset construction as its own node.", "key": [], "his_statement": null, "ours_statement": "A feasible k-cup sum s among the first m cups can be constructed with indices a_i=i+x_i, using integer offsets satisfying 0\u2264x_1\u2264\u22ef\u2264x_k\u2264m\u2212k and \u03a3x_i=(s\u2212k\u00b2)/2. These conditions ensure distinct available indices and total height s."}, {"m": "m23", "his": null, "ours": "N25", "cat": "close", "name": "Canonical family covers attainable heights", "note": "Split out of his N24: the canonical family covers all heights.", "key": [], "his_statement": null, "ours_statement": "Every attainable h admits 1\u2264b\u2264n and S\u2286{1,\u2026,b} containing b with h=n\u2212b+\u03a3_{i\u2208S}(2i\u22121). Conversely, any such representation with h\u22652n\u22121 yields a valid tower in descending-prefix, increasing-subset, descending-tail form."}, {"m": "m24", "his": "N19", "ours": null, "cat": "his", "name": "Choose a nearly extended inner core", "note": "Missing in ours: part of his path P5.", "key": [], "his_statement": "For 2n-1<=h<=n^2, choose the least positive m with m(m-1)>=h-n. Then m<=n, and the required inner height is h-n+m=m^2-d, where d=m(m-1)-(h-n). If m>=2, 0<=d<=2m-3; otherwise d=0.", "ours_statement": null}, {"m": "m25", "his": "N21", "ours": null, "cat": "his", "name": "Repair deficit two by enlarging core", "note": "Missing in ours: part of his path P5.", "key": [], "his_statement": "If N19 gives d=2 and h!=n^2-2, then m<n and m>=3. Enlarge the core to M=m+1. Its new deficit is 2M, realized by placing all other core cups increasingly, then cups M-1 and 2.", "ours_statement": null}, {"m": "m26", "his": "N22", "ours": null, "cat": "his", "name": "Construct padded core with two omissions", "note": "Missing in ours: key node of his path P5.", "key": ["his P5"], "his_statement": "Reject heights excluded by N2 or N3. Choose m,d by N19 and repair d=2 by N21. Otherwise choose the buried set from N20. Output n,...,m+1, then all unburied core indices increasingly, then buried indices decreasingly, converting indices to cup heights.", "ours_statement": null}, {"m": "m27", "his": null, "ours": "N7", "cat": "ours", "name": "Descending consecutive blocks add their maxima", "note": "New in ours: part of our path P2.", "key": [], "his_statement": null, "ours_statement": "Partition cup indices 1 through n into consecutive intervals. Output each interval in decreasing order, with intervals ordered from smaller to larger indices. The resulting tower height is the sum of the heights of the largest cups in the intervals."}, {"m": "m28", "his": null, "ours": "N10", "cat": "ours", "name": "Odd subset block construction", "note": "New in ours: key node of our path P2.", "key": ["ours P2"], "his_statement": null, "ours_statement": "Reject h outside [2n\u22121,n\u00b2] or equal to n\u00b2\u22122. For h=2n+1 use the special ordering. Otherwise choose a subset of heights 1,3,\u2026,2n\u22123 summing to h\u2212(2n\u22121), and use those cup indices together with n as endpoints of descending consecutive blocks."}, {"m": "m29", "his": null, "ours": "N16", "cat": "ours", "name": "Suffix leaves a feasible small residual", "note": "New in ours: part of our path P5.", "key": [], "his_statement": null, "ours_statement": "For any feasible subset sum s of heights 1,3,\u2026,2n\u22123, a consecutive suffix of these heights can be selected so that the remaining target is feasible in the unselected prefix and lies in [0,2n\u22121]."}, {"m": "m30", "his": null, "ours": "N17", "cat": "ours", "name": "Small prefix suffices for residual", "note": "New in ours: part of our path P5.", "key": [], "his_statement": null, "ours_statement": "If r is a feasible subset sum of the first m cup heights, it is also a subset sum of the first min(m,\u2308\u221ar\u2309+1) cup heights."}, {"m": "m31", "his": null, "ours": "N18", "cat": "ours", "name": "Greedy suffix and dense subset DP", "note": "New in ours: key node of our path P5.", "key": ["ours P5"], "his_statement": null, "ours_statement": "Reject infeasible heights; use the special ordering for h=2n+1. Otherwise greedily select a suffix of smaller cup heights, repair residual 2, and solve the remaining small-prefix subset sum with 0/1 dynamic programming. Output selected cups increasingly and all other cups decreasingly."}], "edges": [{"from": "m0", "to": "m1", "src": ["his", "ours"]}, {"from": "m0", "to": "m2", "src": ["his", "ours"]}, {"from": "m0", "to": "m3", "src": ["his", "ours"]}, {"from": "m0", "to": "m5", "src": ["his", "ours"]}, {"from": "m2", "to": "m6", "src": ["his", "ours"]}, {"from": "m4", "to": "m6", "src": ["his", "ours"]}, {"from": "m1", "to": "m6", "src": ["his", "ours"]}, {"from": "m3", "to": "m6", "src": ["his", "ours"]}, {"from": "m5", "to": "m6", "src": ["his", "ours"]}, {"from": "m0", "to": "m7", "src": ["his", "ours"]}, {"from": "m7", "to": "m17", "src": ["his", "ours"]}, {"from": "m7", "to": "m8", "src": ["his", "ours"]}, {"from": "m2", "to": "m8", "src": ["his"]}, {"from": "m17", "to": "m8", "src": ["his", "ours"]}, {"from": "m1", "to": "m8", "src": ["his"]}, {"from": "m9", "to": "m10", "src": ["his", "ours"]}, {"from": "m2", "to": "m11", "src": ["his", "ours"]}, {"from": "m4", "to": "m11", "src": ["his", "ours"]}, {"from": "m1", "to": "m11", "src": ["his", "ours"]}, {"from": "m10", "to": "m11", "src": ["his"]}, {"from": "m3", "to": "m11", "src": ["his", "ours"]}, {"from": "m5", "to": "m11", "src": ["his", "ours"]}, {"from": "m9", "to": "m11", "src": ["his"]}, {"from": "m7", "to": "m12", "src": ["his", "ours"]}, {"from": "m1", "to": "m12", "src": ["his"]}, {"from": "m0", "to": "m19", "src": ["his"]}, {"from": "m0", "to": "m20", "src": ["his"]}, {"from": "m20", "to": "m13", "src": ["his"]}, {"from": "m2", "to": "m13", "src": ["his", "ours"]}, {"from": "m1", "to": "m13", "src": ["his", "ours"]}, {"from": "m12", "to": "m13", "src": ["his", "ours"]}, {"from": "m19", "to": "m13", "src": ["his"]}, {"from": "m7", "to": "m21", "src": ["his"]}, {"from": "m21", "to": "m24", "src": ["his"]}, {"from": "m1", "to": "m24", "src": ["his"]}, {"from": "m3", "to": "m25", "src": ["his"]}, {"from": "m24", "to": "m25", "src": ["his"]}, {"from": "m14", "to": "m26", "src": ["his"]}, {"from": "m2", "to": "m26", "src": ["his"]}, {"from": "m1", "to": "m26", "src": ["his"]}, {"from": "m24", "to": "m26", "src": ["his"]}, {"from": "m25", "to": "m26", "src": ["his"]}, {"from": "m21", "to": "m26", "src": ["his"]}, {"from": "m3", "to": "m26", "src": ["his"]}, {"from": "m3", "to": "m15", "src": ["his", "ours"]}, {"from": "m21", "to": "m15", "src": ["his"]}, {"from": "m24", "to": "m18", "src": ["his"]}, {"from": "m9", "to": "m18", "src": ["his", "ours"]}, {"from": "m10", "to": "m18", "src": ["his"]}, {"from": "m4", "to": "m18", "src": ["his"]}, {"from": "m15", "to": "m16", "src": ["his"]}, {"from": "m18", "to": "m16", "src": ["his", "ours"]}, {"from": "m2", "to": "m16", "src": ["his"]}, {"from": "m1", "to": "m16", "src": ["his"]}, {"from": "m10", "to": "m16", "src": ["his", "ours"]}, {"from": "m9", "to": "m16", "src": ["his"]}, {"from": "m1", "to": "m2", "src": ["ours"]}, {"from": "m2", "to": "m17", "src": ["ours"]}, {"from": "m1", "to": "m17", "src": ["ours"]}, {"from": "m0", "to": "m27", "src": ["ours"]}, {"from": "m4", "to": "m28", "src": ["ours"]}, {"from": "m2", "to": "m28", "src": ["ours"]}, {"from": "m27", "to": "m28", "src": ["ours"]}, {"from": "m1", "to": "m28", "src": ["ours"]}, {"from": "m5", "to": "m28", "src": ["ours"]}, {"from": "m9", "to": "m22", "src": ["ours"]}, {"from": "m22", "to": "m11", "src": ["ours"]}, {"from": "m4", "to": "m29", "src": ["ours"]}, {"from": "m4", "to": "m30", "src": ["ours"]}, {"from": "m30", "to": "m31", "src": ["ours"]}, {"from": "m29", "to": "m31", "src": ["ours"]}, {"from": "m2", "to": "m31", "src": ["ours"]}, {"from": "m1", "to": "m31", "src": ["ours"]}, {"from": "m5", "to": "m31", "src": ["ours"]}, {"from": "m3", "to": "m31", "src": ["ours"]}, {"from": "m14", "to": "m13", "src": ["ours"]}, {"from": "m5", "to": "m13", "src": ["ours"]}, {"from": "m3", "to": "m13", "src": ["ours"]}, {"from": "m7", "to": "m15", "src": ["ours"]}, {"from": "m15", "to": "m23", "src": ["ours"]}, {"from": "m4", "to": "m23", "src": ["ours"]}, {"from": "m18", "to": "m23", "src": ["ours"]}, {"from": "m2", "to": "m23", "src": ["ours"]}, {"from": "m1", "to": "m23", "src": ["ours"]}, {"from": "m23", "to": "m16", "src": ["ours"]}, {"from": "m22", "to": "m16", "src": ["ours"]}]}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById('nodes').textContent);
+  var byM = {}; data.nodes.forEach(function (n) { byM[n.m] = n; });
+  var fig = document.getElementById('figure');
+  var svg = fig.querySelector('svg');
+  var catName = { same: 'same claim', close: 'close', his: 'only in his', ours: 'only in ours' };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+  function side(who, id, text) {
+    if (!id) return '<div class="side none ' + who + '"><div class="who">' + (who === 'his' ? 'His graph' : 'Our graph') + '</div>No matching node.</div>';
+    return '<div class="side ' + who + '"><div class="who">' + (who === 'his' ? 'His ' : 'Our ') + esc(id) + '</div><div>' + esc(text) + '</div></div>';
+  }
+  function show(m) {
+    var n = byM[m]; if (!n) return;
+    svg.querySelectorAll('.node.sel').forEach(function (g) { g.classList.remove('sel'); });
+    var g = svg.getElementById ? svg.getElementById(m) : document.getElementById(m);
+    if (g) g.classList.add('sel');
+    var keys = n.key.length ? ' <span class="muted">· key node of ' + esc(n.key.join(' and ')) + '</span>' : '';
+    document.getElementById('detail-body').innerHTML =
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><strong style="font-family:var(--display);font-size:18px">' + esc(n.name) + '</strong><span class="chip c-' + n.cat + '">' + catName[n.cat] + '</span>' + keys + '</div>' +
+      (n.note ? '<p class="muted">' + esc(n.note) + '</p>' : '') +
+      '<div class="cols">' + side('his', n.his, n.his_statement) + side('ours', n.ours, n.ours_statement) + '</div>';
+  }
+  svg.querySelectorAll('g.node').forEach(function (g) {
+    if (!byM[g.id]) return;
+    g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
+    g.addEventListener('click', function () { show(g.id); });
+    g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(g.id); } });
+  });
+  // remove the native anchors' tooltips duplicating the panel? keep them: they give a quick hover preview.
+  var buttons = document.querySelectorAll('.tally button');
+  function filter(cat) {
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.cat === cat)); });
+    if (!cat) { fig.classList.remove('filtering'); return; }
+    fig.classList.add('filtering');
+    var on = {};
+    svg.querySelectorAll('g.node').forEach(function (g) {
+      var hit = g.classList.contains('n-' + cat);
+      g.classList.toggle('on', hit); if (hit) on[g.id] = true;
+    });
+    svg.querySelectorAll('g.edge').forEach(function (g) {
+      var t = g.querySelector('title'); var parts = t ? t.textContent.split('->') : [];
+      var a = (parts[0] || '').trim(), b = (parts[1] || '').trim();
+      g.classList.toggle('on', !!(on[a] || on[b]));
+    });
+  }
+  var active = null;
+  buttons.forEach(function (b) { b.addEventListener('click', function () { active = (active === b.dataset.cat) ? null : b.dataset.cat; filter(active); }); });
+  document.getElementById('clearbtn').addEventListener('click', function () { active = null; filter(null); });
+  var fitbtn = document.getElementById('fitbtn');
+  fitbtn.addEventListener('click', function () { var f = fig.classList.toggle('fit'); fitbtn.textContent = f ? 'Actual size' : 'Fit to width'; });
+  show('m26');
+})();
+</script>
+
+</body>
+</html>
